@@ -1,0 +1,10 @@
+import './bootstrap';
+import './toast.js';
+import './geolocation.js';
+import './signature.js';
+import './navigation.js';
+import './analyse.js';
+import './lightbox.js';
+import './comparatif.js';
+import './estimation.js';
+import './partage.js';
