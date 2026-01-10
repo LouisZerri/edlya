@@ -1,16 +1,19 @@
 <?php
 
 use App\Http\Controllers\AnalyseController;
-use App\Http\Controllers\EtatDesLieuxController;
-use App\Http\Controllers\PieceController;
+use App\Http\Controllers\ComparatifController;
 use App\Http\Controllers\ElementController;
+use App\Http\Controllers\EstimationController;
+use App\Http\Controllers\EtatDesLieuxController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\PartageController;
 use App\Http\Controllers\PhotoController;
+use App\Http\Controllers\PieceController;
 use App\Http\Controllers\SignatureController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth')->group(function () {
-    // États des lieux
+    // États des lieux (CRUD)
     Route::get('etats-des-lieux', [EtatDesLieuxController::class, 'index'])->name('etats-des-lieux.index');
     Route::get('etats-des-lieux/create', [EtatDesLieuxController::class, 'create'])->name('etats-des-lieux.create');
     Route::post('etats-des-lieux', [EtatDesLieuxController::class, 'store'])->name('etats-des-lieux.store');
@@ -45,17 +48,21 @@ Route::middleware('auth')->group(function () {
     Route::post('analyse/degradation', [AnalyseController::class, 'analyserDegradation'])->name('analyse.degradation');
     Route::post('analyse/degradation-path', [AnalyseController::class, 'analyserDegradationFromPath'])->name('analyse.degradation.path');
 
-    // Comparatif des états des lieux
-    Route::get('etats-des-lieux/{etatDesLieux}/comparatif', [EtatDesLieuxController::class, 'comparatif'])->name('etats-des-lieux.comparatif');
-    Route::get('etats-des-lieux/{etatDesLieux}/comparatif/pdf', [EtatDesLieuxController::class, 'comparatifPdf'])->name('etats-des-lieux.comparatif.pdf');
+    // Comparatif
+    Route::get('etats-des-lieux/{etatDesLieux}/comparatif', [ComparatifController::class, 'index'])->name('etats-des-lieux.comparatif');
+    Route::get('etats-des-lieux/{etatDesLieux}/comparatif/pdf', [ComparatifController::class, 'pdf'])->name('etats-des-lieux.comparatif.pdf');
 
-    // Estimation des réparations
-    Route::get('etats-des-lieux/{etatDesLieux}/estimation', [EtatDesLieuxController::class, 'estimation'])->name('etats-des-lieux.estimation');
-    Route::post('etats-des-lieux/{etatDesLieux}/estimation/pdf', [EtatDesLieuxController::class, 'estimationPdf'])->name('etats-des-lieux.estimation.pdf');
+    // Estimation
+    Route::get('etats-des-lieux/{etatDesLieux}/estimation', [EstimationController::class, 'index'])->name('etats-des-lieux.estimation');
+    Route::post('etats-des-lieux/{etatDesLieux}/estimation/pdf', [EstimationController::class, 'pdf'])->name('etats-des-lieux.estimation.pdf');
 
     // Partages
     Route::post('etats-des-lieux/{etatDesLieux}/partage', [PartageController::class, 'store'])->name('partage.store');
     Route::get('etats-des-lieux/{etatDesLieux}/partages', [PartageController::class, 'history'])->name('partage.history');
     Route::delete('partages/{partage}', [PartageController::class, 'destroy'])->name('partage.destroy');
 
+    // Import PDF
+    Route::get('/import', [ImportController::class, 'create'])->name('etats-des-lieux.import');
+    Route::post('/import/analyze', [ImportController::class, 'analyze'])->name('etats-des-lieux.import.analyze');
+    Route::post('/import/store', [ImportController::class, 'store'])->name('etats-des-lieux.import.store');
 });

@@ -8,3 +8,4 @@ import './lightbox.js';
 import './comparatif.js';
 import './estimation.js';
 import './partage.js';
+import './import.js';

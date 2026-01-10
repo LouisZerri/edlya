@@ -5,15 +5,24 @@
 @section('content')
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-semibold text-slate-800">États des lieux</h1>
-        <a href="{{ route('etats-des-lieux.create') }}" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors cursor-pointer">
-            Nouvel état des lieux
-        </a>
+        <div class="flex gap-3">
+            <a href="{{ route('etats-des-lieux.import') }}" class="inline-flex items-center px-4 py-2 border border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 transition-colors">
+                Importer PDF
+            </a>
+            <a href="{{ route('etats-des-lieux.create') }}" class="inline-flex items-center bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">
+                Nouvel état des lieux
+            </a>
+        </div>
     </div>
 
     @if($etatsDesLieux->isEmpty())
         <div class="bg-white p-8 rounded-lg border border-slate-200 text-center">
             <p class="text-slate-500 mb-4">Vous n'avez pas encore d'état des lieux.</p>
-            <a href="{{ route('etats-des-lieux.create') }}" class="text-primary-600 hover:underline">Créer votre premier état des lieux</a>
+            <div class="flex justify-center gap-4">
+                <a href="{{ route('etats-des-lieux.import') }}" class="text-primary-600 hover:underline">Importer un PDF</a>
+                <span class="text-slate-300">|</span>
+                <a href="{{ route('etats-des-lieux.create') }}" class="text-primary-600 hover:underline">Créer manuellement</a>
+            </div>
         </div>
     @else
     <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
@@ -55,5 +64,5 @@
             </tbody>
         </table>
     </div>
-@endif
+    @endif
 @endsection

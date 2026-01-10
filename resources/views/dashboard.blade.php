@@ -5,9 +5,14 @@
 @section('content')
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-semibold text-slate-800">Tableau de bord</h1>
-        <a href="{{ route('etats-des-lieux.create') }}" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">
-            Nouvel état des lieux
-        </a>
+       <div class="flex gap-3">
+            <a href="{{ route('etats-des-lieux.import') }}" class="inline-flex items-center px-4 py-2 border border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 transition-colors">
+                Importer PDF
+            </a>
+            <a href="{{ route('etats-des-lieux.create') }}" class="inline-flex items-center bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">
+                Nouvel état des lieux
+            </a>
+        </div>
     </div>
 
     {{-- Stats principales --}}
