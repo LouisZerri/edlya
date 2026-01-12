@@ -66,4 +66,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/import', [ImportController::class, 'create'])->name('etats-des-lieux.import');
     Route::post('/import/analyze', [ImportController::class, 'analyze'])->name('etats-des-lieux.import.analyze');
     Route::post('/import/store', [ImportController::class, 'store'])->name('etats-des-lieux.import.store');
+
+    // Pré-remplissage typologie
+    Route::post('etats-des-lieux/{etatDesLieux}/generer-pieces', [EtatDesLieuxController::class, 'genererPieces'])->name('etats-des-lieux.generer-pieces');
+    Route::get('typologies', [EtatDesLieuxController::class, 'getTypologies'])->name('typologies.index');
 });

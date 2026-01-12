@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\EtatDesLieux;
 use App\Models\Logement;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class EtatDesLieuxController extends Controller
 {
+    /**
+     * Liste des états des lieux
+     */
     public function index()
     {
         $etatsDesLieux = EtatDesLieux::with('logement')
@@ -20,6 +24,9 @@ class EtatDesLieuxController extends Controller
         return view('etats-des-lieux.index', compact('etatsDesLieux'));
     }
 
+    /**
+     * Formulaire de création
+     */
     public function create()
     {
         $logements = Logement::where('user_id', Auth::id())->get();
@@ -30,7 +37,10 @@ class EtatDesLieuxController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    /**
+     * Enregistrement d’un nouvel état des lieux
+     */
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'logement_id' => ['required', 'exists:logements,id'],
@@ -40,17 +50,50 @@ class EtatDesLieuxController extends Controller
             'locataire_email' => ['nullable', 'email', 'max:255'],
             'locataire_telephone' => ['nullable', 'string', 'max:20'],
             'observations_generales' => ['nullable', 'string'],
+            'typologie' => ['nullable', 'string'],
         ]);
 
-        $validated['user_id'] = Auth::id();
-        $validated['statut'] = 'brouillon';
+        // Vérifier que le logement appartient à l'utilisateur
+        $logement = Logement::where('user_id', Auth::id())
+            ->findOrFail($validated['logement_id']);
 
-        $etatDesLieux = EtatDesLieux::create($validated);
+        // Créer l'état des lieux
+        $etatDesLieux = EtatDesLieux::create([
+            'user_id' => Auth::id(),
+            'logement_id' => $validated['logement_id'],
+            'type' => $validated['type'],
+            'date_realisation' => $validated['date_realisation'],
+            'locataire_nom' => $validated['locataire_nom'],
+            'locataire_email' => $validated['locataire_email'] ?? null,
+            'locataire_telephone' => $validated['locataire_telephone'] ?? null,
+            'observations_generales' => $validated['observations_generales'] ?? null,
+            'statut' => 'brouillon',
+        ]);
 
-        return redirect()->route('etats-des-lieux.edit', $etatDesLieux)
+        // Générer les pièces selon la typologie
+        if (!empty($validated['typologie'])) {
+            $typologies = config('typologies');
+
+            if (isset($typologies[$validated['typologie']])) {
+                $pieces = $typologies[$validated['typologie']]['pieces'];
+
+                foreach ($pieces as $ordre => $nomPiece) {
+                    $etatDesLieux->pieces()->create([
+                        'nom' => $nomPiece,
+                        'ordre' => $ordre + 1,
+                    ]);
+                }
+            }
+        }
+
+        return redirect()
+            ->route('etats-des-lieux.edit', $etatDesLieux)
             ->with('success', 'État des lieux créé avec succès.');
     }
 
+    /**
+     * Affichage d’un état des lieux
+     */
     public function show(EtatDesLieux $etatDesLieux)
     {
         $this->authorize('view', $etatDesLieux);
@@ -60,6 +103,9 @@ class EtatDesLieuxController extends Controller
         return view('etats-des-lieux.show', compact('etatDesLieux'));
     }
 
+    /**
+     * Formulaire d’édition
+     */
     public function edit(EtatDesLieux $etatDesLieux)
     {
         $this->authorize('update', $etatDesLieux);
@@ -70,6 +116,9 @@ class EtatDesLieuxController extends Controller
         return view('etats-des-lieux.edit', compact('etatDesLieux', 'logements'));
     }
 
+    /**
+     * Mise à jour
+     */
     public function update(Request $request, EtatDesLieux $etatDesLieux)
     {
         $this->authorize('update', $etatDesLieux);
@@ -87,32 +136,94 @@ class EtatDesLieuxController extends Controller
 
         $etatDesLieux->update($validated);
 
-        return redirect()->route('etats-des-lieux.show', $etatDesLieux)
+        return redirect()
+            ->route('etats-des-lieux.show', $etatDesLieux)
             ->with('success', 'État des lieux mis à jour.');
     }
 
+    /**
+     * Suppression
+     */
     public function destroy(EtatDesLieux $etatDesLieux)
     {
         $this->authorize('delete', $etatDesLieux);
 
         $etatDesLieux->delete();
 
-        return redirect()->route('etats-des-lieux.index')
+        return redirect()
+            ->route('etats-des-lieux.index')
             ->with('success', 'État des lieux supprimé.');
     }
 
+    /**
+     * Génération PDF
+     */
     public function pdf(EtatDesLieux $etatDesLieux)
     {
         $this->authorize('view', $etatDesLieux);
 
         $etatDesLieux->load(['logement', 'user', 'pieces.elements.photos']);
 
-        $pdf = Pdf::loadView('etats-des-lieux.pdf', compact('etatDesLieux'));
-        $pdf->setPaper('A4', 'portrait');
+        $pdf = Pdf::loadView('etats-des-lieux.pdf', compact('etatDesLieux'))
+            ->setPaper('A4', 'portrait');
 
         $type = $etatDesLieux->type === 'entree' ? 'entree' : 'sortie';
-        $filename = 'edl_' . $type . '_' . $etatDesLieux->logement->nom . '_' . $etatDesLieux->date_realisation->format('Y-m-d') . '.pdf';
+
+        $filename = 'edl_' .
+            $type . '_' .
+            $etatDesLieux->logement->nom . '_' .
+            $etatDesLieux->date_realisation->format('Y-m-d') .
+            '.pdf';
 
         return $pdf->download($filename);
+    }
+
+    /**
+     * API - Liste des typologies
+     */
+    public function getTypologies()
+    {
+        return response()->json(config('typologies'));
+    }
+
+    /**
+     * API - Génération automatique des pièces
+     */
+    public function genererPieces(Request $request, EtatDesLieux $etatDesLieux)
+    {
+        $this->authorize('update', $etatDesLieux);
+
+        $request->validate([
+            'typologie' => ['required', 'string'],
+        ]);
+
+        $typologie = $request->input('typologie');
+        $typologies = config('typologies');
+
+        if (!isset($typologies[$typologie])) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Typologie inconnue',
+            ], 422);
+        }
+
+        if ($request->boolean('remplacer')) {
+            $etatDesLieux->pieces()->delete();
+        }
+
+        $ordre = $etatDesLieux->pieces()->max('ordre') ?? 0;
+
+        foreach ($typologies[$typologie]['pieces'] as $nomPiece) {
+            $etatDesLieux->pieces()->create([
+                'nom' => $nomPiece,
+                'ordre' => ++$ordre,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => count($typologies[$typologie]['pieces']) . ' pièces générées avec succès',
+            'redirect' => route('etats-des-lieux.edit', $etatDesLieux),
+        ]);
     }
 }

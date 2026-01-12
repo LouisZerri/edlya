@@ -1,11 +1,38 @@
 import './bootstrap';
-import './toast.js';
-import './geolocation.js';
-import './signature.js';
-import './navigation.js';
-import './analyse.js';
-import './lightbox.js';
-import './comparatif.js';
-import './estimation.js';
-import './partage.js';
-import './import.js';
+
+/*
+|--------------------------------------------------------------------------
+| Components (UI)
+|--------------------------------------------------------------------------
+*/
+import './components/toast';
+import './components/lightbox';
+import './components/navigation';
+import './components/accordion';
+
+/*
+|--------------------------------------------------------------------------
+| Utilities
+|--------------------------------------------------------------------------
+*/
+import './utils/geolocation';
+
+/*
+|--------------------------------------------------------------------------
+| Forms
+|--------------------------------------------------------------------------
+*/
+import './forms/signature';
+
+/*
+|--------------------------------------------------------------------------
+| Features
+|--------------------------------------------------------------------------
+*/
+import './features/analyse';
+import './features/comparatif';
+import './features/estimation';
+import './features/import';
+import './features/partage';
+import './features/typologie/generate';
+import './features/typologie/preview';
