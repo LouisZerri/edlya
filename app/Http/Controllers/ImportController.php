@@ -6,6 +6,7 @@ use App\Models\EtatDesLieux;
 use App\Models\Logement;
 use App\Models\Piece;
 use App\Models\Element;
+use App\Models\Photo;
 use App\Services\ImportPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,7 +14,6 @@ use Illuminate\Support\Facades\DB;
 
 class ImportController extends Controller
 {
-
     public function create()
     {
         return view('etats-des-lieux.import');
@@ -27,11 +27,15 @@ class ImportController extends Controller
 
         try {
             $file = $request->file('pdf');
-
-            // Utiliser directement le fichier temporaire uploadé
             $fullPath = $file->getRealPath();
 
             $data = $importService->analyserPdf($fullPath);
+
+            // Stocker les photos temporaires en session
+            $extractedPhotos = $data['_extracted_photos'] ?? [];
+            unset($data['_extracted_photos']);
+            
+            session(['imported_photos' => $extractedPhotos]);
 
             // Vérifier si le logement existe déjà
             $logementExistant = null;
@@ -44,6 +48,7 @@ class ImportController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $data,
+                'photos_count' => count($extractedPhotos),
                 'logement_existant' => $logementExistant ? [
                     'id' => $logementExistant->id,
                     'nom' => $logementExistant->nom,
@@ -58,7 +63,7 @@ class ImportController extends Controller
         }
     }
 
-    public function store(Request $request)
+    public function store(Request $request, ImportPdfService $importService)
     {
         $request->validate([
             'data' => ['required', 'array'],
@@ -66,6 +71,7 @@ class ImportController extends Controller
         ]);
 
         $data = $request->input('data');
+        $extractedPhotos = session('imported_photos', []);
 
         try {
             DB::beginTransaction();
@@ -75,18 +81,15 @@ class ImportController extends Controller
                 $logement = Logement::where('user_id', Auth::id())
                     ->findOrFail($request->input('logement_id'));
             } else {
-                // Extraire ville et code postal de l'adresse
                 $adresse = $data['logement']['adresse'] ?? '';
                 $codePostal = '00000';
                 $ville = 'Non renseignée';
 
-                // Chercher pattern: 33480 Castelnau de Médoc
                 if (preg_match('/(\d{5})\s+(.+)$/i', $adresse, $matches)) {
                     $codePostal = $matches[1];
                     $ville = trim($matches[2]);
                 }
 
-                // Extraire le nom (partie avant le code postal)
                 $nom = $adresse;
                 if (preg_match('/^(.+?),?\s*\d{5}/i', $adresse, $matchesNom)) {
                     $nom = trim($matchesNom[1], ', ');
@@ -117,7 +120,7 @@ class ImportController extends Controller
                 'statut' => 'brouillon',
             ]);
 
-            // Créer les pièces et éléments
+            // Créer les pièces et éléments avec photos
             if (!empty($data['pieces'])) {
                 foreach ($data['pieces'] as $ordre => $pieceData) {
                     $piece = Piece::create([
@@ -128,21 +131,47 @@ class ImportController extends Controller
 
                     if (!empty($pieceData['elements'])) {
                         foreach ($pieceData['elements'] as $elementOrdre => $elementData) {
-                            Element::create([
+                            // Convertir l'état du format IA vers le format BDD
+                            $etat = $this->convertEtat($elementData['etat'] ?? 'bon_etat');
+                            
+                            $element = Element::create([
                                 'piece_id' => $piece->id,
                                 'nom' => $elementData['nom'],
                                 'type' => $elementData['type'] ?? 'autre',
-                                'quantite' => $elementData['quantite'] ?? 1,
-                                'etat_entree' => $data['type'] === 'entree' ? ($elementData['etat'] ?? 'bon_etat') : null,
-                                'etat_sortie' => $data['type'] === 'sortie' ? ($elementData['etat'] ?? 'bon_etat') : null,
-                                'observations_entree' => $data['type'] === 'entree' ? ($elementData['observations'] ?? null) : null,
-                                'observations_sortie' => $data['type'] === 'sortie' ? ($elementData['observations'] ?? null) : null,
-                                'ordre' => $elementOrdre + 1,
+                                'etat' => $etat,
+                                'observations' => $elementData['observations'] ?? null,
                             ]);
+
+                            // Associer les photos à l'élément
+                            $photoIndices = $elementData['photo_indices'] ?? [];
+                            foreach ($photoIndices as $photoIndex) {
+                                $arrayIndex = $photoIndex - 1;
+                                
+                                if (isset($extractedPhotos[$arrayIndex]) && empty($extractedPhotos[$arrayIndex]['used'])) {
+                                    $photoPath = $extractedPhotos[$arrayIndex]['path'] ?? null;
+                                    
+                                    if ($photoPath) {
+                                        $savedPath = $importService->saveExtractedPhoto($photoPath);
+                                        
+                                        if ($savedPath) {
+                                            Photo::create([
+                                                'element_id' => $element->id,
+                                                'chemin' => $savedPath,
+                                            ]);
+                                            
+                                            $extractedPhotos[$arrayIndex]['used'] = true;
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
+
+            // Nettoyer les photos non utilisées
+            $importService->cleanupTempPhotos($extractedPhotos);
+            session()->forget('imported_photos');
 
             DB::commit();
 
@@ -152,11 +181,34 @@ class ImportController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            $importService->cleanupTempPhotos($extractedPhotos);
+            session()->forget('imported_photos');
 
             return response()->json([
                 'success' => false,
                 'error' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    /**
+     * Convertir l'état du format IA vers le format BDD
+     */
+    private function convertEtat(string $etat): string
+    {
+        $mapping = [
+            'neuf' => 'neuf',
+            'bon_etat' => 'tres_bon',
+            'tres_bon' => 'tres_bon',
+            'bon' => 'bon',
+            'etat_moyen' => 'usage',
+            'usage' => 'usage',
+            'mauvais_etat' => 'mauvais',
+            'mauvais' => 'mauvais',
+            'hors_service' => 'hors_service',
+        ];
+
+        return $mapping[$etat] ?? 'bon';
     }
 }
