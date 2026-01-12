@@ -139,12 +139,16 @@
 
             @if ($etatDesLieux->pieces->isNotEmpty())
                 @foreach ($etatDesLieux->pieces as $piece)
+                    @php
+                        $allPhotos = $piece->elements->flatMap(fn($e) => $e->photos)->values();
+                    @endphp
+
                     <div id="piece-{{ $piece->id }}"
                         class="bg-white rounded-lg border border-slate-200 mb-6 scroll-mt-6">
                         {{-- En-tête de la pièce --}}
                         <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 rounded-t-lg">
                             <h3 class="font-semibold text-slate-800">{{ $piece->nom }}</h3>
-                            <p class="text-sm text-slate-500">{{ $piece->elements->count() }} élément(s)</p>
+                            <p class="text-sm text-slate-500">{{ $piece->elements->count() }} élément(s) · {{ $allPhotos->count() }} photo(s)</p>
                             @if ($piece->observations)
                                 <p class="text-sm text-slate-600 mt-2 italic">{{ $piece->observations }}</p>
                             @endif
@@ -155,15 +159,13 @@
                             <div class="p-6">
                                 <div class="space-y-4">
                                     @foreach ($piece->elements as $element)
-                                        <div
-                                            class="border border-slate-200 rounded-lg p-4 bg-white hover:shadow-sm transition-shadow">
+                                        <div class="border border-slate-200 rounded-lg p-4 bg-white hover:shadow-sm transition-shadow">
                                             {{-- En-tête de l'élément --}}
                                             <div class="flex items-start justify-between mb-2">
                                                 <div>
                                                     <div class="flex items-center gap-2 mb-1">
                                                         <span class="font-medium text-slate-800">{{ $element->nom }}</span>
-                                                        <span
-                                                            class="px-2.5 py-1 text-xs rounded-full {{ $element->etat_couleur }}">{{ $element->etat_libelle }}</span>
+                                                        <span class="px-2.5 py-1 text-xs rounded-full {{ $element->etat_couleur }}">{{ $element->etat_libelle }}</span>
                                                     </div>
                                                     <p class="text-sm text-slate-500">{{ $element->type }}</p>
                                                 </div>
@@ -173,33 +175,32 @@
                                                 <p class="text-sm text-slate-600 mt-2 italic bg-slate-50 p-3 rounded-lg">
                                                     {{ $element->observations }}</p>
                                             @endif
-
-                                            {{-- Photos --}}
-                                            @if ($element->photos->isNotEmpty())
-                                                <div class="flex flex-wrap gap-3 mt-4">
-                                                    @foreach ($element->photos as $photo)
-                                                        <div>
-                                                            <a href="{{ $photo->url }}"
-                                                                data-lightbox="element-{{ $element->id }}"
-                                                                data-src="{{ $photo->url }}"
-                                                                data-caption="{{ $photo->legende ?? '' }}"
-                                                                class="block cursor-pointer">
-                                                                <img src="{{ $photo->url }}"
-                                                                    alt="{{ $photo->legende ?? 'Photo' }}"
-                                                                    class="w-24 h-24 object-cover rounded-lg hover:opacity-90 transition-opacity border border-slate-200">
-                                                            </a>
-                                                            @if ($photo->legende)
-                                                                <p
-                                                                    class="text-xs text-slate-500 mt-1 text-center max-w-24 truncate">
-                                                                    {{ $photo->legende }}</p>
-                                                            @endif
-                                                        </div>
-                                                    @endforeach
-                                                </div>
-                                            @endif
                                         </div>
                                     @endforeach
                                 </div>
+
+                                {{-- Photos regroupées en bas de la pièce --}}
+                                @if ($allPhotos->isNotEmpty())
+                                    <div class="mt-6 pt-6 border-t border-slate-200">
+                                        <p class="text-sm font-medium text-slate-700 mb-4">Photos ({{ $allPhotos->count() }})</p>
+                                        <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                                            @foreach ($allPhotos as $index => $photo)
+                                                <div class="text-center">
+                                                    <a href="{{ $photo->url }}"
+                                                        data-lightbox="piece-{{ $piece->id }}"
+                                                        data-src="{{ $photo->url }}"
+                                                        data-caption="Photo {{ $index + 1 }}{{ $photo->legende ? ' - ' . $photo->legende : '' }}"
+                                                        class="block cursor-pointer">
+                                                        <img src="{{ $photo->url }}"
+                                                            alt="Photo {{ $index + 1 }}"
+                                                            class="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity border border-slate-200">
+                                                    </a>
+                                                    <p class="text-xs text-slate-600 mt-1 font-medium">Photo {{ $index + 1 }}</p>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
                         @else
                             <div class="p-6">

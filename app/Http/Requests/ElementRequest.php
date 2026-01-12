@@ -15,7 +15,7 @@ class ElementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type' => ['required', 'string', 'in:sol,mur,plafond,menuiserie,electricite,plomberie,equipement,autre'],
+            'type' => ['required', 'string', 'in:sol,mur,plafond,menuiserie,electricite,plomberie,chauffage,equipement,mobilier,electromenager,autre'],
             'nom' => ['required', 'string', 'min:2', 'max:255'],
             'etat' => ['required', 'in:neuf,tres_bon,bon,usage,mauvais,hors_service'],
             'observations' => ['nullable', 'string', 'max:1000'],

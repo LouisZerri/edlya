@@ -87,7 +87,7 @@ class EtatDesLieuxController extends Controller
 
         $etatDesLieux->update($validated);
 
-        return redirect()->route('etats-des-lieux.edit', $etatDesLieux)
+        return redirect()->route('etats-des-lieux.show', $etatDesLieux)
             ->with('success', 'État des lieux mis à jour.');
     }
 

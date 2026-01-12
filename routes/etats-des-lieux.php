@@ -35,6 +35,7 @@ Route::middleware('auth')->group(function () {
 
     // Photos
     Route::post('elements/{element}/photos', [PhotoController::class, 'store'])->name('photos.store');
+    Route::post('pieces/{piece}/photos', [PhotoController::class, 'storeForPiece'])->name('pieces.photos.store');
     Route::delete('photos/{photo}', [PhotoController::class, 'destroy'])->name('photos.destroy');
 
     // Signatures
