@@ -13,6 +13,8 @@ class DatabaseSeeder extends Seeder
             LogementSeeder::class,
             EtatDesLieuxSeeder::class,
             CoutReparationSeeder::class,
+            CompteurSeeder::class,
+            CleSeeder::class,
         ]);
     }
 }

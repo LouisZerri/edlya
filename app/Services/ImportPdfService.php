@@ -34,8 +34,20 @@ class ImportPdfService
             throw new \Exception('Impossible de convertir le PDF en images.');
         }
 
+        Log::info('Import PDF - Pages converties', ['count' => count($images)]);
+
         // Extraire les photos du PDF
         $extractedPhotos = $this->extractPhotosFromPdf($pdfPath);
+
+        Log::info('Import PDF - Photos extraites après filtrage', [
+            'count' => count($extractedPhotos),
+            'photos' => array_map(fn($p) => [
+                'path' => basename($p['path']),
+                'width' => $p['width'],
+                'height' => $p['height'],
+                'size_kb' => round(filesize($p['path']) / 1024, 2),
+            ], $extractedPhotos),
+        ]);
 
         $prompt = $this->buildExtractionPrompt(count($extractedPhotos));
 
@@ -88,10 +100,15 @@ class ImportPdfService
         $result = $response->json();
         $textContent = $result['content'][0]['text'] ?? '';
 
-        Log::info('Import PDF - Réponse IA', ['response' => $textContent]);
+        Log::info('Import PDF - Réponse IA brute', ['response' => $textContent]);
 
         $data = $this->parseJsonResponse($textContent);
-        
+
+        // Log spécifique pour les compteurs
+        Log::info('Import PDF - Compteurs extraits par IA', [
+            'compteurs' => $data['compteurs'] ?? 'NON TROUVÉ',
+        ]);
+
         // Ajouter les photos extraites aux données
         $data['_extracted_photos'] = $extractedPhotos;
 
@@ -104,12 +121,11 @@ class ImportPdfService
     private function extractPhotosFromPdf(string $pdfPath): array
     {
         $tempDir = storage_path('app/temp/photos_' . uniqid());
-        
+
         if (!is_dir($tempDir)) {
             mkdir($tempDir, 0755, true);
         }
 
-        // Utiliser pdfimages pour extraire les images
         $command = sprintf(
             'pdfimages -png %s %s/photo 2>&1',
             escapeshellarg($pdfPath),
@@ -119,35 +135,64 @@ class ImportPdfService
         exec($command, $output, $returnCode);
 
         $photos = [];
-        
+        $allImages = [];
+
         if ($returnCode === 0) {
             $files = glob($tempDir . '/*.png');
             sort($files);
 
-            // Filtrer les petites images (logos, icônes) - garder seulement les photos
-            foreach ($files as $file) {
+            foreach ($files as $index => $file) {
                 $imageInfo = getimagesize($file);
+                $fileSize = filesize($file);
+
                 if ($imageInfo) {
                     $width = $imageInfo[0];
                     $height = $imageInfo[1];
-                    
-                    // Garder seulement les images assez grandes (probablement des photos)
-                    // Exclure les très petites (icônes) et les très allongées (headers)
-                    if ($width >= 100 && $height >= 100 && $width < 3000 && $height < 3000) {
-                        $ratio = $width / $height;
-                        // Ratio entre 0.5 et 2 (pas trop allongé)
-                        if ($ratio >= 0.5 && $ratio <= 2) {
-                            $photos[] = [
-                                'path' => $file,
-                                'width' => $width,
-                                'height' => $height,
-                            ];
-                        } else {
-                            unlink($file);
-                        }
+                    $pixels = $width * $height;
+                    $ratio = $height > 0 ? $width / $height : 0;
+                    $bytesPerPixel = $pixels > 0 ? $fileSize / $pixels : 0;
+
+                    $imageData = [
+                        'index' => $index,
+                        'file' => basename($file),
+                        'width' => $width,
+                        'height' => $height,
+                        'ratio' => round($ratio, 2),
+                        'size_kb' => round($fileSize / 1024, 2),
+                        'bytes_per_pixel' => round($bytesPerPixel, 3),
+                        'status' => 'pending',
+                    ];
+
+                    // Critères de filtrage
+                    $isValidSize = $width >= 200 && $height >= 200;
+                    $isNotTooLarge = $width < 3000 && $height < 3000;
+                    $isValidRatio = $ratio >= 0.5 && $ratio <= 2;
+                    $isNotTooSmallFile = $fileSize > 10000;
+                    $isRealPhoto = $bytesPerPixel > 0.15;
+
+                    // Exclure les images parfaitement carrées (logos, avatars)
+                    $isNotSquare = abs($ratio - 1.0) > 0.05;
+
+                    if ($isValidSize && $isNotTooLarge && $isValidRatio && $isNotTooSmallFile && $isRealPhoto && $isNotSquare) {
+                        $photos[] = [
+                            'path' => $file,
+                            'width' => $width,
+                            'height' => $height,
+                        ];
+                        $imageData['status'] = 'KEPT';
                     } else {
+                        $imageData['status'] = 'REJECTED';
+                        $imageData['reasons'] = [];
+                        if (!$isValidSize) $imageData['reasons'][] = 'trop_petit';
+                        if (!$isNotTooLarge) $imageData['reasons'][] = 'trop_grand';
+                        if (!$isValidRatio) $imageData['reasons'][] = 'ratio_invalide';
+                        if (!$isNotTooSmallFile) $imageData['reasons'][] = 'fichier_trop_leger';
+                        if (!$isRealPhoto) $imageData['reasons'][] = 'logo_detecte_bytes_per_pixel';
+                        if (!$isNotSquare) $imageData['reasons'][] = 'image_carree_suspecte';
                         unlink($file);
                     }
+
+                    $allImages[] = $imageData;
                 }
             }
         }
@@ -196,10 +241,10 @@ class ImportPdfService
         $photoInstruction = '';
         if ($photoCount > 0) {
             $photoInstruction = "
-                PHOTOS IMPORTANTES:
-                - {$photoCount} photos ont été extraites du PDF.
-                - Dans 'photo_indices', indique les numéros des photos (1, 2, 3...) associées à chaque élément.
-                - Cherche les mentions 'Photo 1', 'Photo 2', '(Photo 1)', 'cf. Photo 1' dans les observations.";
+                PHOTOS EXTRAITES : {$photoCount} photos ont été extraites du PDF.
+                - Les photos sont numérotées de 1 à {$photoCount} dans l'ordre où elles apparaissent dans le document.
+                - Cherche les légendes des photos : 'Photo 1 - Eau', 'Photo 2 - Cuisine', 'Compteur électrique', etc.
+                - Associe chaque photo au bon élément ou compteur via photo_indices.";
         }
 
         return <<<PROMPT
@@ -261,17 +306,17 @@ class ImportPdfService
                                 "nom": "Nom exact de l'élément",
                                 "type": "sol|mur|plafond|menuiserie|electricite|plomberie|chauffage|equipement|mobilier|electromenager|autre",
                                 "etat": "neuf|bon_etat|etat_moyen|mauvais_etat",
-                                "observations": "TOUTES les observations, remarques, commentaires - COPIER MOT POUR MOT",
-                                "photo_indices": [1, 2] (numéros des photos associées) ou []
+                                "observations": "TOUTES les observations - COPIER MOT POUR MOT",
+                                "photo_indices": [1, 2] ou []
                             }
                         ]
                     }
                 ],
                 "compteurs": {
-                    "electricite": {"numero": "xxx", "index": "xxx"},
-                    "gaz": {"numero": "xxx", "index": "xxx"},
-                    "eau_froide": {"numero": "xxx", "index": "xxx"},
-                    "eau_chaude": {"numero": "xxx", "index": "xxx"}
+                    "electricite": {"numero": "numéro ou null", "index": "relevé ou null", "commentaire": "observations complètes ou null", "photo_indices": []},
+                    "gaz": {"numero": "numéro ou null", "index": "relevé ou null", "commentaire": "observations complètes ou null", "photo_indices": []},
+                    "eau_froide": {"numero": "numéro ou null", "index": "relevé ou null", "commentaire": "observations complètes ou null", "photo_indices": []},
+                    "eau_chaude": {"numero": "numéro ou null", "index": "relevé ou null", "commentaire": "observations complètes ou null", "photo_indices": []}
                 },
                 "cles": [
                     {"type": "Porte d'entrée", "nombre": 2},
@@ -280,14 +325,28 @@ class ImportPdfService
                 "observations_generales": "Toutes les observations générales du document"
             }
 
-            EXEMPLES D'OBSERVATIONS À EXTRAIRE :
-            - "Parquet vitrifié en excellent état" → observations: "Parquet vitrifié en excellent état"
-            - "Légères traces d'usure" → observations: "Légères traces d'usure"
-            - "RAS" → observations: "RAS"
-            - "Fonctionne" → observations: "Fonctionne"
-            - "À nettoyer" → observations: "À nettoyer"
-            - "Tâche sur le mur côté fenêtre" → observations: "Tâche sur le mur côté fenêtre"
-            - "(Photo 1)" → observations contient "(Photo 1)", photo_indices: [1]
+            COMPTEURS - TRÈS IMPORTANT :
+            - Extraire le numéro du compteur (N°, numéro, matricule, PDL, PCE, etc.)
+            - Extraire l'index/relevé. Si "non relevé" ou vide → mettre null pour index
+            - Extraire TOUTES les observations mot pour mot dans "commentaire"
+            - Le compteur "EAU" sans précision = eau_froide
+
+            PHOTOS DE COMPTEURS - CRITIQUE :
+            - Cherche les mentions "Photo X" dans les observations des compteurs
+            - Cherche les photos légendées dans le document : "Photo 1 - Eau", "Photo 2 - Electricité", "Compteur électrique", etc.
+            - RÈGLE : Si l'observation d'un compteur contient "Photo 1" ET qu'une photo est légendée "Photo 1 - Eau" ou similaire :
+            → Ajouter 1 dans photo_indices du compteur correspondant
+            - MÊME si le relevé est "non relevé", s'il y a une référence photo, TOUJOURS remplir photo_indices
+
+            EXEMPLE CONCRET DU DOCUMENT :
+            - Compteur EAU avec numéro "532253812029817D", relevé "non relevé", observation "Compteur N° 4 relevés sur photos Photo 1"
+            - Photo légendée "Photo 1 - Eau" visible dans le document
+            → eau_froide = {
+                "numero": "532253812029817D", 
+                "index": null, 
+                "commentaire": "Compteur N° 4 relevés sur photos Photo 1", 
+                "photo_indices": [1]
+            }
             {$photoInstruction}
 
             IMPORTANT : Ne laisse AUCUNE observation vide si le document en contient une !
@@ -324,9 +383,9 @@ class ImportPdfService
 
         $filename = 'photos/' . uniqid() . '_imported.png';
         $content = file_get_contents($tempPath);
-        
+
         Storage::disk('public')->put($filename, $content);
-        
+
         // Supprimer le fichier temporaire
         unlink($tempPath);
 
@@ -343,7 +402,7 @@ class ImportPdfService
                 unlink($photo['path']);
             }
         }
-        
+
         // Nettoyer les dossiers temp vides
         $tempDirs = glob(storage_path('app/temp/photos_*'), GLOB_ONLYDIR);
         foreach ($tempDirs as $dir) {

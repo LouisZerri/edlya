@@ -76,6 +76,16 @@ class EtatDesLieux extends Model
         return $this->hasMany(Partage::class);
     }
 
+    public function compteurs(): HasMany
+    {
+        return $this->hasMany(Compteur::class);
+    }
+
+    public function cles(): HasMany
+    {
+        return $this->hasMany(Cle::class);
+    }
+
     public function getTypeLibelleAttribute(): string
     {
         return $this->type === 'entree' ? 'Entrée' : 'Sortie';

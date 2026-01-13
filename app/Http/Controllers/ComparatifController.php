@@ -28,8 +28,8 @@ class ComparatifController extends Controller
                 ->with('error', 'Aucun état des lieux d\'entrée signé trouvé pour ce logement.');
         }
 
-        $edlEntree->load('pieces.elements.photos');
-        $etatDesLieux->load('pieces.elements.photos');
+        $edlEntree->load(['pieces.elements.photos', 'compteurs', 'cles']);
+        $etatDesLieux->load(['pieces.elements.photos', 'compteurs', 'cles']);
 
         $comparatif = $this->comparatifService->buildComparatif($edlEntree, $etatDesLieux);
         $stats = $this->comparatifService->calculateStats($comparatif);
@@ -58,8 +58,8 @@ class ComparatifController extends Controller
                 ->with('error', 'Aucun état des lieux d\'entrée signé trouvé pour ce logement.');
         }
 
-        $edlEntree->load('pieces.elements.photos');
-        $etatDesLieux->load('pieces.elements.photos');
+        $edlEntree->load(['pieces.elements.photos', 'compteurs', 'cles']);
+        $etatDesLieux->load(['pieces.elements.photos', 'compteurs', 'cles']);
 
         $comparatif = $this->comparatifService->buildComparatif($edlEntree, $etatDesLieux);
         $stats = $this->comparatifService->calculateStats($comparatif);

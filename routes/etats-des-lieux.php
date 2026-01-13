@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AnalyseController;
+use App\Http\Controllers\CleController;
 use App\Http\Controllers\ComparatifController;
+use App\Http\Controllers\CompteurController;
 use App\Http\Controllers\ElementController;
 use App\Http\Controllers\EstimationController;
 use App\Http\Controllers\EtatDesLieuxController;
@@ -70,4 +72,16 @@ Route::middleware('auth')->group(function () {
     // Pré-remplissage typologie
     Route::post('etats-des-lieux/{etatDesLieux}/generer-pieces', [EtatDesLieuxController::class, 'genererPieces'])->name('etats-des-lieux.generer-pieces');
     Route::get('typologies', [EtatDesLieuxController::class, 'getTypologies'])->name('typologies.index');
+
+    // Compteurs
+    Route::post('etats-des-lieux/{etatDesLieux}/compteurs', [CompteurController::class, 'store'])->name('compteurs.store');
+    Route::put('compteurs/{compteur}', [CompteurController::class, 'update'])->name('compteurs.update');
+    Route::delete('compteurs/{compteur}', [CompteurController::class, 'destroy'])->name('compteurs.destroy');
+    Route::delete('compteurs/{compteur}/photo', [CompteurController::class, 'deletePhoto'])->name('compteurs.delete-photo');
+
+    // Clés
+    Route::post('etats-des-lieux/{etatDesLieux}/cles', [CleController::class, 'store'])->name('cles.store');
+    Route::put('cles/{cle}', [CleController::class, 'update'])->name('cles.update');
+    Route::delete('cles/{cle}', [CleController::class, 'destroy'])->name('cles.destroy');
+    Route::delete('cles/{cle}/photo', [CleController::class, 'deletePhoto'])->name('cles.delete-photo');
 });

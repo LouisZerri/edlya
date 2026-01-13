@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cle;
 use App\Models\EtatDesLieux;
 use App\Models\Logement;
 use App\Models\Piece;
 use App\Models\Element;
 use App\Models\Photo;
+use App\Models\Compteur;
 use App\Services\ImportPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ImportController extends Controller
 {
@@ -34,7 +38,7 @@ class ImportController extends Controller
             // Stocker les photos temporaires en session
             $extractedPhotos = $data['_extracted_photos'] ?? [];
             unset($data['_extracted_photos']);
-            
+
             session(['imported_photos' => $extractedPhotos]);
 
             // Vérifier si le logement existe déjà
@@ -120,6 +124,71 @@ class ImportController extends Controller
                 'statut' => 'brouillon',
             ]);
 
+            // Créer les compteurs
+            if (!empty($data['compteurs'])) {
+                $typesCompteurs = ['electricite', 'eau_froide', 'eau_chaude', 'gaz'];
+
+                foreach ($typesCompteurs as $type) {
+                    if (!empty($data['compteurs'][$type])) {
+                        $compteurData = $data['compteurs'][$type];
+
+                        $numero = $compteurData['numero'] ?? null;
+                        $index = $compteurData['index'] ?? null;
+
+                        // On crée le compteur même sans numéro/index s'il y a une photo
+                        $photoIndices = $compteurData['photo_indices'] ?? [];
+
+                        if ($numero || $index || !empty($photoIndices)) {
+                            $photoPath = null;
+
+                            if (!empty($photoIndices)) {
+                                $photoIndex = $photoIndices[0];
+                                // L'IA compte à partir de 1, et les photos sont déjà filtrées
+                                // Donc Photo 1 = index 0 du tableau filtré
+                                $arrayIndex = $photoIndex - 1;
+
+                                if (isset($extractedPhotos[$arrayIndex]) && empty($extractedPhotos[$arrayIndex]['used'])) {
+                                    $tempPhotoPath = $extractedPhotos[$arrayIndex]['path'] ?? null;
+
+                                    if ($tempPhotoPath && file_exists($tempPhotoPath)) {
+                                        $filename = 'compteurs/' . uniqid() . '_imported.png';
+                                        $content = file_get_contents($tempPhotoPath);
+                                        Storage::disk('public')->put($filename, $content);
+
+                                        $photoPath = $filename;
+                                        $extractedPhotos[$arrayIndex]['used'] = true;
+                                        unlink($tempPhotoPath);
+                                    }
+                                }
+                            }
+
+                            Compteur::create([
+                                'etat_des_lieux_id' => $etatDesLieux->id,
+                                'type' => $type,
+                                'numero' => $numero,
+                                'index' => $index,
+                                'commentaire' => $compteurData['commentaire'] ?? null,
+                                'photo' => $photoPath,
+                            ]);
+
+                            // Créer les clés
+                            if (!empty($data['cles'])) {
+                                foreach ($data['cles'] as $cleData) {
+                                    if (!empty($cleData['type'])) {
+                                        Cle::create([
+                                            'etat_des_lieux_id' => $etatDesLieux->id,
+                                            'type' => $cleData['type'],
+                                            'nombre' => $cleData['nombre'] ?? 1,
+                                            'commentaire' => $cleData['commentaire'] ?? null,
+                                        ]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             // Créer les pièces et éléments avec photos
             if (!empty($data['pieces'])) {
                 foreach ($data['pieces'] as $ordre => $pieceData) {
@@ -133,7 +202,7 @@ class ImportController extends Controller
                         foreach ($pieceData['elements'] as $elementOrdre => $elementData) {
                             // Convertir l'état du format IA vers le format BDD
                             $etat = $this->convertEtat($elementData['etat'] ?? 'bon_etat');
-                            
+
                             $element = Element::create([
                                 'piece_id' => $piece->id,
                                 'nom' => $elementData['nom'],
@@ -146,19 +215,19 @@ class ImportController extends Controller
                             $photoIndices = $elementData['photo_indices'] ?? [];
                             foreach ($photoIndices as $photoIndex) {
                                 $arrayIndex = $photoIndex - 1;
-                                
+
                                 if (isset($extractedPhotos[$arrayIndex]) && empty($extractedPhotos[$arrayIndex]['used'])) {
                                     $photoPath = $extractedPhotos[$arrayIndex]['path'] ?? null;
-                                    
+
                                     if ($photoPath) {
                                         $savedPath = $importService->saveExtractedPhoto($photoPath);
-                                        
+
                                         if ($savedPath) {
                                             Photo::create([
                                                 'element_id' => $element->id,
                                                 'chemin' => $savedPath,
                                             ]);
-                                            
+
                                             $extractedPhotos[$arrayIndex]['used'] = true;
                                         }
                                     }
@@ -181,7 +250,7 @@ class ImportController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             $importService->cleanupTempPhotos($extractedPhotos);
             session()->forget('imported_photos');
 

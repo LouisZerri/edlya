@@ -2,19 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ElementRequest;
 use App\Models\Element;
 use App\Models\Piece;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ElementController extends Controller
 {
-    public function store(ElementRequest $request, Piece $piece): RedirectResponse
+    public function store(Request $request, Piece $piece): RedirectResponse
     {
         $this->authorizeAccess($piece);
 
-        $piece->elements()->create($request->validated());
+        $validated = $request->validate([
+            'type' => ['required', 'string', 'max:100'],
+            'nom' => ['required', 'string', 'max:255'],
+            'etat' => ['required', 'in:neuf,tres_bon,bon,usage,mauvais,hors_service'],
+            'observations' => ['nullable', 'string', 'max:1000'],
+            'degradations' => ['nullable', 'array'],
+            'degradations.*' => ['string', 'max:100'],
+        ]);
+
+        $piece->elements()->create($validated);
 
         return redirect()
             ->route('etats-des-lieux.edit', $piece->etat_des_lieux_id)
@@ -22,11 +31,25 @@ class ElementController extends Controller
             ->with('success', 'Élément ajouté.');
     }
 
-    public function update(ElementRequest $request, Element $element): RedirectResponse
+    public function update(Request $request, Element $element): RedirectResponse
     {
         $this->authorizeAccessElement($element);
 
-        $element->update($request->validated());
+        $validated = $request->validate([
+            'type' => ['required', 'string', 'max:100'],
+            'nom' => ['required', 'string', 'max:255'],
+            'etat' => ['required', 'in:neuf,tres_bon,bon,usage,mauvais,hors_service'],
+            'observations' => ['nullable', 'string', 'max:1000'],
+            'degradations' => ['nullable', 'array'],
+            'degradations.*' => ['string', 'max:100'],
+        ]);
+
+        // Si aucune dégradation cochée, mettre un tableau vide
+        if (!isset($validated['degradations'])) {
+            $validated['degradations'] = [];
+        }
+
+        $element->update($validated);
 
         return redirect()
             ->route('etats-des-lieux.edit', $element->piece->etat_des_lieux_id)

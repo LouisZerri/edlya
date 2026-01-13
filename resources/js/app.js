@@ -36,3 +36,5 @@ import './features/import';
 import './features/partage';
 import './features/typologie/generate';
 import './features/typologie/preview';
+import './features/compteur';
+import './features/degradations';

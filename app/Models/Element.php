@@ -18,7 +18,15 @@ class Element extends Model
         'nom',
         'etat',
         'observations',
+        'degradations',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'degradations' => 'array',
+        ];
+    }
 
     protected static function boot()
     {
@@ -65,5 +73,51 @@ class Element extends Model
             'hors_service' => 'bg-red-100 text-red-700',
             default => 'bg-slate-100 text-slate-600',
         };
+    }
+
+    public function getTypeLibelleAttribute(): string
+    {
+        return match($this->type) {
+            'sol' => 'Sol',
+            'mur' => 'Mur',
+            'plafond' => 'Plafond',
+            'menuiserie' => 'Menuiserie',
+            'electricite' => 'Électricité',
+            'plomberie' => 'Plomberie',
+            'chauffage' => 'Chauffage',
+            'equipement' => 'Équipement',
+            'mobilier' => 'Mobilier',
+            'electromenager' => 'Électroménager',
+            'autre' => 'Autre',
+            default => ucfirst($this->type),
+        };
+    }
+
+    /**
+     * Récupérer les dégradations suggérées pour ce type d'élément
+     */
+    public function getDegradationsSuggerees(): array
+    {
+        return config("degradations.{$this->type}", config('degradations.autre', []));
+    }
+
+    /**
+     * Vérifier si l'élément a des dégradations
+     */
+    public function hasDegradations(): bool
+    {
+        return !empty($this->degradations) && count($this->degradations) > 0;
+    }
+
+    /**
+     * Récupérer les dégradations formatées en texte
+     */
+    public function getDegradationsFormateesAttribute(): string
+    {
+        if (!$this->hasDegradations()) {
+            return '';
+        }
+
+        return implode(', ', $this->degradations);
     }
 }

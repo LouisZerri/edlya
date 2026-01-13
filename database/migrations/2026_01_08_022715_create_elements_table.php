@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('nom');
             $table->enum('etat', ['neuf', 'tres_bon', 'bon', 'usage', 'mauvais', 'hors_service'])->default('bon');
             $table->text('observations')->nullable();
+            $table->json('degradations')->nullable();
             $table->timestamps();
         });
     }

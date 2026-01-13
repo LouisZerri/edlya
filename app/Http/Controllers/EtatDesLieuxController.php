@@ -91,26 +91,27 @@ class EtatDesLieuxController extends Controller
             ->with('success', 'État des lieux créé avec succès.');
     }
 
+
     /**
-     * Affichage d’un état des lieux
+     * Affichage d'un état des lieux
      */
     public function show(EtatDesLieux $etatDesLieux)
     {
         $this->authorize('view', $etatDesLieux);
 
-        $etatDesLieux->load(['logement', 'pieces.elements.photos']);
+        $etatDesLieux->load(['logement', 'pieces.elements.photos', 'compteurs', 'cles']);
 
         return view('etats-des-lieux.show', compact('etatDesLieux'));
     }
 
     /**
-     * Formulaire d’édition
+     * Formulaire d'édition
      */
     public function edit(EtatDesLieux $etatDesLieux)
     {
         $this->authorize('update', $etatDesLieux);
 
-        $etatDesLieux->load(['logement', 'pieces.elements.photos']);
+        $etatDesLieux->load(['logement', 'pieces.elements.photos', 'compteurs', 'cles']);
         $logements = Logement::where('user_id', Auth::id())->get();
 
         return view('etats-des-lieux.edit', compact('etatDesLieux', 'logements'));
@@ -162,7 +163,7 @@ class EtatDesLieuxController extends Controller
     {
         $this->authorize('view', $etatDesLieux);
 
-        $etatDesLieux->load(['logement', 'user', 'pieces.elements.photos']);
+        $etatDesLieux->load(['logement', 'user', 'pieces.elements.photos', 'compteurs', 'cles']);
 
         $pdf = Pdf::loadView('etats-des-lieux.pdf', compact('etatDesLieux'))
             ->setPaper('A4', 'portrait');
