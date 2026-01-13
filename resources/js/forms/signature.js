@@ -32,8 +32,12 @@ class SignaturePad {
 
     resize() {
         const rect = this.canvas.getBoundingClientRect();
-        this.canvas.width = rect.width;
-        this.canvas.height = rect.height;
+        const dpr = window.devicePixelRatio || 1;
+        
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        
+        this.ctx.scale(dpr, dpr);
         this.ctx.strokeStyle = '#1e293b';
         this.ctx.lineWidth = 2;
         this.ctx.lineCap = 'round';
@@ -81,7 +85,8 @@ class SignaturePad {
     }
 
     clear() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        const dpr = window.devicePixelRatio || 1;
+        this.ctx.clearRect(0, 0, this.canvas.width / dpr, this.canvas.height / dpr);
     }
 
     isEmpty() {
@@ -98,24 +103,36 @@ class SignaturePad {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Signature Bailleur
     const canvasBailleur = document.getElementById('signature-bailleur');
-    const canvasLocataire = document.getElementById('signature-locataire');
-
-    if (canvasBailleur && canvasLocataire) {
+    if (canvasBailleur) {
         const padBailleur = new SignaturePad(canvasBailleur);
-        const padLocataire = new SignaturePad(canvasLocataire);
-
-        document.getElementById('clear-bailleur').addEventListener('click', () => padBailleur.clear());
-        document.getElementById('clear-locataire').addEventListener('click', () => padLocataire.clear());
-
-        document.getElementById('signature-form').addEventListener('submit', function(e) {
-            if (padBailleur.isEmpty() || padLocataire.isEmpty()) {
+        
+        document.getElementById('clear-bailleur')?.addEventListener('click', () => padBailleur.clear());
+        
+        document.getElementById('form-bailleur')?.addEventListener('submit', function(e) {
+            if (padBailleur.isEmpty()) {
                 e.preventDefault();
-                alert('Les deux signatures sont requises.');
+                alert('La signature est requise.');
                 return;
             }
-
             document.getElementById('input-signature-bailleur').value = padBailleur.toDataURL();
+        });
+    }
+
+    // Signature Locataire
+    const canvasLocataire = document.getElementById('signature-locataire');
+    if (canvasLocataire) {
+        const padLocataire = new SignaturePad(canvasLocataire);
+        
+        document.getElementById('clear-locataire')?.addEventListener('click', () => padLocataire.clear());
+        
+        document.getElementById('form-locataire')?.addEventListener('submit', function(e) {
+            if (padLocataire.isEmpty()) {
+                e.preventDefault();
+                alert('La signature est requise.');
+                return;
+            }
             document.getElementById('input-signature-locataire').value = padLocataire.toDataURL();
         });
     }

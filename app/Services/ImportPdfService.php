@@ -244,7 +244,7 @@ class ImportPdfService
                 PHOTOS EXTRAITES : {$photoCount} photos ont été extraites du PDF.
                 - Les photos sont numérotées de 1 à {$photoCount} dans l'ordre où elles apparaissent dans le document.
                 - Cherche les légendes des photos : 'Photo 1 - Eau', 'Photo 2 - Cuisine', 'Compteur électrique', etc.
-                - Associe chaque photo au bon élément ou compteur via photo_indices.";
+                - Associe chaque photo au bon élément, compteur ou clé via photo_indices.";
         }
 
         return <<<PROMPT
@@ -319,8 +319,8 @@ class ImportPdfService
                     "eau_chaude": {"numero": "numéro ou null", "index": "relevé ou null", "commentaire": "observations complètes ou null", "photo_indices": []}
                 },
                 "cles": [
-                    {"type": "Porte d'entrée", "nombre": 2},
-                    {"type": "Boîte aux lettres", "nombre": 1}
+                    {"type": "Porte d'entrée", "nombre": 2, "commentaire": "observations ou null", "photo_indices": [21]},
+                    {"type": "Boîte aux lettres", "nombre": 1, "commentaire": null, "photo_indices": [23]}
                 ],
                 "observations_generales": "Toutes les observations générales du document"
             }
@@ -338,7 +338,14 @@ class ImportPdfService
             → Ajouter 1 dans photo_indices du compteur correspondant
             - MÊME si le relevé est "non relevé", s'il y a une référence photo, TOUJOURS remplir photo_indices
 
-            EXEMPLE CONCRET DU DOCUMENT :
+            CLÉS - TRÈS IMPORTANT :
+            - Cherche la section "REMISE DES CLÉS" dans le document
+            - Extrait chaque type de clé avec son nombre
+            - Cherche les mentions "Photo X" dans la colonne observations/commentaires des clés
+            - Si une clé a une photo associée (ex: "Photo 21 - Porte principale"), ajoute l'indice dans photo_indices
+            - Extrait aussi tout commentaire/observation associé à chaque clé
+
+            EXEMPLE COMPTEUR :
             - Compteur EAU avec numéro "532253812029817D", relevé "non relevé", observation "Compteur N° 4 relevés sur photos Photo 1"
             - Photo légendée "Photo 1 - Eau" visible dans le document
             → eau_froide = {
@@ -347,6 +354,14 @@ class ImportPdfService
                 "commentaire": "Compteur N° 4 relevés sur photos Photo 1", 
                 "photo_indices": [1]
             }
+
+            EXEMPLE CLÉS :
+            - "Porte principale" - 2 clés - Photo 21
+            - "Parties communes" - 2 clés - Photo 22
+            → cles = [
+                {"type": "Porte principale", "nombre": 2, "commentaire": null, "photo_indices": [21]},
+                {"type": "Parties communes", "nombre": 2, "commentaire": null, "photo_indices": [22]}
+            ]
             {$photoInstruction}
 
             IMPORTANT : Ne laisse AUCUNE observation vide si le document en contient une !

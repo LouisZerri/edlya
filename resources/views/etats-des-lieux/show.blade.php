@@ -35,6 +35,19 @@
                 </svg>
                 Modifier
             </a>
+
+            {{-- Bouton Signer --}}
+            @if ($etatDesLieux->statut !== 'signe')
+                <a href="{{ route('etats-des-lieux.signature', $etatDesLieux) }}"
+                    class="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                    Signer
+                </a>
+            @endif
+
             <a href="{{ route('etats-des-lieux.pdf', $etatDesLieux) }}"
                 class="inline-flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 transition-colors text-sm font-medium">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -43,6 +56,7 @@
                 </svg>
                 Télécharger PDF
             </a>
+
             @if ($etatDesLieux->type === 'sortie')
                 <a href="{{ route('etats-des-lieux.comparatif', $etatDesLieux) }}"
                     class="inline-flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium">
@@ -142,7 +156,8 @@
         <div class="bg-white p-6 rounded-lg border border-slate-200 mb-8">
             <h2 class="font-medium text-slate-800 mb-4 flex items-center gap-2">
                 <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 Relevé des compteurs
             </h2>
@@ -175,8 +190,8 @@
                             <p class="text-xs text-slate-500 mt-2">{{ $compteur->commentaire }}</p>
                         @endif
                         @if ($compteur->photo)
-                            <a href="{{ $compteur->photo_url }}" target="_blank" class="block mt-2">
-                                <img src="{{ $compteur->photo_url }}" alt="Compteur"
+                            <a href="{{ Storage::url($compteur->photo) }}" target="_blank" class="block mt-2">
+                                <img src="{{ Storage::url($compteur->photo) }}" alt="Compteur"
                                     class="w-full h-20 object-cover rounded-lg border border-slate-200 hover:opacity-90 transition-opacity">
                             </a>
                         @endif
@@ -203,8 +218,8 @@
                 @foreach ($etatDesLieux->cles as $cle)
                     <div class="flex items-center gap-3 bg-slate-50 rounded-lg p-4">
                         @if ($cle->photo)
-                            <a href="{{ $cle->photo_url }}" target="_blank" class="flex-shrink-0">
-                                <img src="{{ $cle->photo_url }}" alt="Photo clé"
+                            <a href="{{ Storage::url($cle->photo) }}" target="_blank" class="flex-shrink-0">
+                                <img src="{{ Storage::url($cle->photo) }}" alt="Photo clé"
                                     class="w-14 h-14 object-cover rounded-lg border border-slate-200 hover:opacity-90 transition-opacity">
                             </a>
                         @else
@@ -251,7 +266,16 @@
 
         @forelse ($etatDesLieux->pieces as $piece)
             @php
+                // Construire un mapping des photos avec leur numéro
                 $allPhotos = $piece->elements->flatMap(fn($e) => $e->photos)->values();
+                $photoNumberMap = [];
+                $photoIndex = 1;
+                foreach ($piece->elements as $element) {
+                    foreach ($element->photos as $photo) {
+                        $photoNumberMap[$photo->id] = $photoIndex;
+                        $photoIndex++;
+                    }
+                }
             @endphp
 
             <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
@@ -280,7 +304,8 @@
                                             <td class="py-3 px-4 font-medium text-slate-800">{{ $element->nom }}</td>
                                             <td class="py-3 px-4 text-slate-600">{{ $element->type_libelle }}</td>
                                             <td class="py-3 px-4">
-                                                <span class="px-2 py-1 text-xs rounded-full {{ $element->etat_couleur }}">
+                                                <span
+                                                    class="px-2 py-1 text-xs rounded-full whitespace-nowrap {{ $element->etat_couleur }}">
                                                     {{ $element->etat_libelle }}
                                                 </span>
                                             </td>
@@ -298,12 +323,59 @@
                                                     <span class="text-slate-400">-</span>
                                                 @endif
                                             </td>
-                                            <td class="py-3 px-4 text-slate-600">{{ $element->observations ?: '-' }}</td>
+                                            <td class="py-3 px-4 text-slate-600">
+                                                @php
+                                                    $observations = $element->observations ?: '';
+                                                    $photoNumbers = $element->photos->map(fn($p) => 'Photo ' . $photoNumberMap[$p->id])->implode(', ');
+                                                @endphp
+                                                
+                                                @if ($observations && $photoNumbers)
+                                                    {{ $observations }}
+                                                    <span class="inline-flex items-center gap-1 ml-2 text-primary-600 font-medium">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                        </svg>
+                                                        {{ $photoNumbers }}
+                                                    </span>
+                                                @elseif ($photoNumbers)
+                                                    <span class="inline-flex items-center gap-1 text-primary-600 font-medium">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                        </svg>
+                                                        {{ $photoNumbers }}
+                                                    </span>
+                                                @elseif ($observations)
+                                                    {{ $observations }}
+                                                @else
+                                                    <span class="text-slate-400">-</span>
+                                                @endif
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
                         </div>
+
+                        {{-- Galerie photos de la pièce --}}
+                        @if ($allPhotos->isNotEmpty())
+                            <div class="mt-6 pt-6 border-t border-slate-200">
+                                <h4 class="text-sm font-medium text-slate-700 mb-3">Photos de la pièce</h4>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                    @foreach ($allPhotos as $index => $photo)
+                                        <a href="{{ Storage::url($photo->chemin) }}" target="_blank"
+                                            class="group relative block">
+                                            <img src="{{ Storage::url($photo->chemin) }}"
+                                                alt="Photo {{ $index + 1 }}"
+                                                class="w-full h-24 object-cover rounded-lg border border-slate-200 group-hover:opacity-90 transition-opacity">
+                                            <span
+                                                class="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
+                                                {{ $index + 1 }}
+                                            </span>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     @else
                         <p class="text-slate-500 text-center py-8">Aucun élément dans cette pièce</p>
                     @endif

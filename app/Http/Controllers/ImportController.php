@@ -135,7 +135,6 @@ class ImportController extends Controller
                         $numero = $compteurData['numero'] ?? null;
                         $index = $compteurData['index'] ?? null;
 
-                        // On crée le compteur même sans numéro/index s'il y a une photo
                         $photoIndices = $compteurData['photo_indices'] ?? [];
 
                         if ($numero || $index || !empty($photoIndices)) {
@@ -143,8 +142,6 @@ class ImportController extends Controller
 
                             if (!empty($photoIndices)) {
                                 $photoIndex = $photoIndices[0];
-                                // L'IA compte à partir de 1, et les photos sont déjà filtrées
-                                // Donc Photo 1 = index 0 du tableau filtré
                                 $arrayIndex = $photoIndex - 1;
 
                                 if (isset($extractedPhotos[$arrayIndex]) && empty($extractedPhotos[$arrayIndex]['used'])) {
@@ -170,21 +167,45 @@ class ImportController extends Controller
                                 'commentaire' => $compteurData['commentaire'] ?? null,
                                 'photo' => $photoPath,
                             ]);
+                        }
+                    }
+                }
+            }
 
-                            // Créer les clés
-                            if (!empty($data['cles'])) {
-                                foreach ($data['cles'] as $cleData) {
-                                    if (!empty($cleData['type'])) {
-                                        Cle::create([
-                                            'etat_des_lieux_id' => $etatDesLieux->id,
-                                            'type' => $cleData['type'],
-                                            'nombre' => $cleData['nombre'] ?? 1,
-                                            'commentaire' => $cleData['commentaire'] ?? null,
-                                        ]);
-                                    }
+            // Créer les clés
+            if (!empty($data['cles'])) {
+                foreach ($data['cles'] as $cleData) {
+                    if (!empty($cleData['type'])) {
+                        $photoPath = null;
+
+                        // Gérer la photo de la clé
+                        $photoIndices = $cleData['photo_indices'] ?? [];
+                        if (!empty($photoIndices)) {
+                            $photoIndex = $photoIndices[0];
+                            $arrayIndex = $photoIndex - 1;
+
+                            if (isset($extractedPhotos[$arrayIndex]) && empty($extractedPhotos[$arrayIndex]['used'])) {
+                                $tempPhotoPath = $extractedPhotos[$arrayIndex]['path'] ?? null;
+
+                                if ($tempPhotoPath && file_exists($tempPhotoPath)) {
+                                    $filename = 'cles/' . uniqid() . '_imported.png';
+                                    $content = file_get_contents($tempPhotoPath);
+                                    Storage::disk('public')->put($filename, $content);
+
+                                    $photoPath = $filename;
+                                    $extractedPhotos[$arrayIndex]['used'] = true;
+                                    unlink($tempPhotoPath);
                                 }
                             }
                         }
+
+                        Cle::create([
+                            'etat_des_lieux_id' => $etatDesLieux->id,
+                            'type' => $cleData['type'],
+                            'nombre' => $cleData['nombre'] ?? 1,
+                            'commentaire' => $cleData['commentaire'] ?? null,
+                            'photo' => $photoPath,
+                        ]);
                     }
                 }
             }
@@ -200,7 +221,6 @@ class ImportController extends Controller
 
                     if (!empty($pieceData['elements'])) {
                         foreach ($pieceData['elements'] as $elementOrdre => $elementData) {
-                            // Convertir l'état du format IA vers le format BDD
                             $etat = $this->convertEtat($elementData['etat'] ?? 'bon_etat');
 
                             $element = Element::create([
@@ -211,7 +231,6 @@ class ImportController extends Controller
                                 'observations' => $elementData['observations'] ?? null,
                             ]);
 
-                            // Associer les photos à l'élément
                             $photoIndices = $elementData['photo_indices'] ?? [];
                             foreach ($photoIndices as $photoIndex) {
                                 $arrayIndex = $photoIndex - 1;

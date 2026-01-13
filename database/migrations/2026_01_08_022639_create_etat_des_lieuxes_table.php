@@ -24,6 +24,13 @@ return new class extends Migration
             $table->text('signature_locataire')->nullable();
             $table->timestamp('date_signature_bailleur')->nullable();
             $table->timestamp('date_signature_locataire')->nullable();
+            $table->string('code_validation', 6)->nullable();
+            $table->timestamp('code_validation_expire_at')->nullable();
+            $table->timestamp('code_validation_verifie_at')->nullable();
+            $table->string('signature_ip')->nullable();
+            $table->text('signature_user_agent')->nullable();
+            $table->string('signature_token', 64)->nullable()->unique();
+            $table->timestamp('signature_token_expire_at')->nullable();
             $table->timestamps();
         });
     }

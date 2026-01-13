@@ -14,6 +14,7 @@ use App\Http\Controllers\PieceController;
 use App\Http\Controllers\SignatureController;
 use Illuminate\Support\Facades\Route;
 
+
 Route::middleware('auth')->group(function () {
     // États des lieux (CRUD)
     Route::get('etats-des-lieux', [EtatDesLieuxController::class, 'index'])->name('etats-des-lieux.index');
@@ -39,10 +40,6 @@ Route::middleware('auth')->group(function () {
     Route::post('elements/{element}/photos', [PhotoController::class, 'store'])->name('photos.store');
     Route::post('pieces/{piece}/photos', [PhotoController::class, 'storeForPiece'])->name('pieces.photos.store');
     Route::delete('photos/{photo}', [PhotoController::class, 'destroy'])->name('photos.destroy');
-
-    // Signatures
-    Route::get('etats-des-lieux/{etatDesLieux}/signature', [SignatureController::class, 'show'])->name('etats-des-lieux.signature');
-    Route::post('etats-des-lieux/{etatDesLieux}/signature', [SignatureController::class, 'store']);
 
     // Analyse IA
     Route::post('analyse/upload', [AnalyseController::class, 'uploadPhoto'])->name('analyse.upload');
@@ -84,4 +81,9 @@ Route::middleware('auth')->group(function () {
     Route::put('cles/{cle}', [CleController::class, 'update'])->name('cles.update');
     Route::delete('cles/{cle}', [CleController::class, 'destroy'])->name('cles.destroy');
     Route::delete('cles/{cle}/photo', [CleController::class, 'deletePhoto'])->name('cles.delete-photo');
+
+    // Signatures (côté bailleur authentifié)
+    Route::get('etats-des-lieux/{etatDesLieux}/signature', [SignatureController::class, 'show'])->name('etats-des-lieux.signature');
+    Route::post('etats-des-lieux/{etatDesLieux}/signature/bailleur', [SignatureController::class, 'signerBailleur'])->name('etats-des-lieux.signature.bailleur');
+    Route::post('etats-des-lieux/{etatDesLieux}/signature/envoyer-lien', [SignatureController::class, 'envoyerLien'])->name('etats-des-lieux.signature.envoyer-lien');
 });
