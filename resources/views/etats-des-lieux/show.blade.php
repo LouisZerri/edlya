@@ -266,15 +266,13 @@
 
         @forelse ($etatDesLieux->pieces as $piece)
             @php
-                // Construire un mapping des photos avec leur numéro
-                $allPhotos = $piece->elements->flatMap(fn($e) => $e->photos)->values();
+                // Construire un mapping des photos avec leur numéro (triées par ID = ordre de création)
+                $allPhotos = $piece->elements->flatMap(fn($e) => $e->photos)->sortBy('id')->values();
                 $photoNumberMap = [];
                 $photoIndex = 1;
-                foreach ($piece->elements as $element) {
-                    foreach ($element->photos as $photo) {
-                        $photoNumberMap[$photo->id] = $photoIndex;
-                        $photoIndex++;
-                    }
+                foreach ($allPhotos as $photo) {
+                    $photoNumberMap[$photo->id] = $photoIndex;
+                    $photoIndex++;
                 }
             @endphp
 
@@ -325,7 +323,11 @@
                                             </td>
                                             <td class="py-3 px-4 text-slate-600">
                                                 @php
+                                                    // Nettoyer les références (Photo X) des observations pour éviter les doublons
                                                     $observations = $element->observations ?: '';
+                                                    $observations = preg_replace('/,?\s*\(Photo \d+\)/', '', $observations);
+                                                    $observations = trim($observations);
+                                                    
                                                     $photoNumbers = $element->photos->map(fn($p) => 'Photo ' . $photoNumberMap[$p->id])->implode(', ');
                                                 @endphp
                                                 
