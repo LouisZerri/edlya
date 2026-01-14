@@ -1,5 +1,3 @@
-import './bootstrap';
-
 /*
 |--------------------------------------------------------------------------
 | Components (UI)
@@ -9,6 +7,7 @@ import './components/toast';
 import './components/lightbox';
 import './components/navigation';
 import './components/accordion';
+import './components/faq-modal';
 
 /*
 |--------------------------------------------------------------------------
@@ -38,3 +37,5 @@ import './features/typologie/generate';
 import './features/typologie/preview';
 import './features/compteur';
 import './features/degradations';
+import './features/suggestions-observations';
+import './features/assistant-redaction';

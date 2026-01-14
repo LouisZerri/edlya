@@ -62,7 +62,11 @@
                             </svg>
                         </div>
                         <div>
-                            <h2 class="font-medium text-slate-800">Relevé des compteurs</h2>
+                            <h2 class="font-medium text-slate-800 flex items-center">
+                                Relevé des compteurs
+                                <x-aide-tooltip
+                                    texte="Relevez l'index de chaque compteur et prenez une photo comme preuve. Les index permettront de calculer la consommation entre l'entrée et la sortie." />
+                            </h2>
                             <p class="text-sm text-slate-500">{{ $etatDesLieux->compteurs->count() }} compteur(s)
                                 renseigné(s)</p>
                         </div>
@@ -115,7 +119,12 @@
                                                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
                                         </div>
                                         <div>
-                                            <label class="block text-xs text-slate-500 mb-1">Index / Relevé</label>
+                                            <label class="block text-xs text-slate-500 mb-1 flex items-center">
+                                                Index / Relevé
+                                                <x-aide-tooltip
+                                                    texte="Notez tous les chiffres affichés sur le compteur. Pour l'électricité, notez HP et HC séparément si applicable."
+                                                    position="bottom" />
+                                            </label>
                                             <input type="text" name="index" value="{{ $compteur?->index }}"
                                                 placeholder="Ex: 45678"
                                                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
@@ -206,7 +215,11 @@
                             </svg>
                         </div>
                         <div>
-                            <h2 class="font-medium text-slate-800">Remise des clés</h2>
+                            <h2 class="font-medium text-slate-800 flex items-center">
+                                Remise des clés
+                                <x-aide-tooltip
+                                    texte="Listez toutes les clés remises avec leur quantité. En cas de perte, le locataire devra rembourser le remplacement des clés et éventuellement de la serrure." />
+                            </h2>
                             <p class="text-sm text-slate-500">{{ $etatDesLieux->cles->sum('nombre') }} clé(s) au total</p>
                         </div>
                     </div>
@@ -384,7 +397,11 @@
             {{-- Section Pièces --}}
             <div class="bg-white p-6 rounded-lg border border-slate-200">
                 <div class="flex items-center justify-between mb-6">
-                    <h2 class="font-medium text-slate-800">Pièces</h2>
+                    <h2 class="font-medium text-slate-800 flex items-center">
+                        Pièces
+                        <x-aide-tooltip
+                            texte="Ajoutez les pièces du logement puis leurs éléments. Pour chaque élément, indiquez l'état et les éventuelles dégradations." />
+                    </h2>
                     <span class="text-sm text-slate-500">{{ $etatDesLieux->pieces->count() }} pièce(s)</span>
                 </div>
 
@@ -563,7 +580,12 @@
                                                             class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none">
                                                     </div>
                                                     <div>
-                                                        <label class="block text-xs text-slate-500 mb-1">État</label>
+                                                        <label class="block text-xs text-slate-500 mb-1 flex items-center">
+                                                            État
+                                                            <x-aide-tooltip
+                                                                texte="Neuf = jamais utilisé. Très bon = quasi neuf. Bon = usure légère. Usagé = usure normale. Mauvais = dégradations. Hors service = non fonctionnel."
+                                                                position="bottom" />
+                                                        </label>
                                                         <select name="etat"
                                                             class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
                                                             <option value="neuf"
@@ -590,8 +612,11 @@
 
                                                 {{-- Section Dégradations --}}
                                                 <div class="degradations-section">
-                                                    <label class="block text-xs text-slate-500 mb-2">Dégradations
-                                                        constatées</label>
+                                                    <label class="block text-xs text-slate-500 mb-2 flex items-center">
+                                                        Dégradations constatées
+                                                        <x-aide-tooltip
+                                                            texte="Sélectionnez les dégradations constatées. L'usure normale (vétusté) est à la charge du bailleur, les dégradations anormales à la charge du locataire." />
+                                                    </label>
 
                                                     @php
                                                         $suggerees = $element->getDegradationsSuggerees();
@@ -640,12 +665,29 @@
                                                 </div>
 
                                                 <div>
-                                                    <label class="block text-xs text-slate-500 mb-1">Observations</label>
+                                                    <label class="block text-xs text-slate-500 mb-1 flex items-center">
+                                                        Observations
+                                                        <x-aide-tooltip
+                                                            texte="Décrivez l'état de l'élément de manière factuelle. Vous pouvez utiliser l'assistant IA (💡) pour améliorer votre texte."
+                                                            position="bottom" />
+                                                    </label>
                                                     <div class="flex gap-2">
-                                                        <input type="text" name="observations"
-                                                            value="{{ $element->observations }}"
-                                                            placeholder="Remarques complémentaires..."
-                                                            class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none">
+                                                        <div class="flex-1 relative">
+                                                            <input type="text" name="observations"
+                                                                value="{{ $element->observations }}"
+                                                                placeholder="Remarques complémentaires..."
+                                                                class="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none">
+                                                            <button type="button"
+                                                                class="btn-assistant-ia absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors cursor-pointer"
+                                                                title="Améliorer avec l'IA">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                                    viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                                        stroke-width="2"
+                                                                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
                                                         <button type="submit"
                                                             class="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-200 transition-colors cursor-pointer">
                                                             Sauvegarder
@@ -713,8 +755,10 @@
 
                             {{-- Photos --}}
                             <div class="border-t border-slate-200 pt-5">
-                                <p class="text-sm font-medium text-slate-700 mb-4">Photos de la pièce
-                                    ({{ $allPhotos->count() }})
+                                <p class="text-sm font-medium text-slate-700 mb-4 flex items-center">
+                                    Photos de la pièce ({{ $allPhotos->count() }})
+                                    <x-aide-tooltip
+                                        texte="Photographiez chaque élément important, les dégradations constatées et les vues d'ensemble. Les photos servent de preuves en cas de litige." />
                                 </p>
 
                                 @if ($allPhotos->isNotEmpty())

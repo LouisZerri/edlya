@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AideController;
 use App\Http\Controllers\Auth\AuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,5 +15,6 @@ Route::middleware('guest')->group(function () {
 
 // Routes pour les utilisateurs connectés
 Route::middleware('auth')->group(function () {
+    Route::post('/aide/ameliorer-observation', [AideController::class, 'ameliorerObservation'])->name('aide.ameliorer-observation');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
