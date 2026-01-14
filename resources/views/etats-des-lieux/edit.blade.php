@@ -481,7 +481,7 @@
                 {{-- Liste des pièces --}}
                 @forelse ($etatDesLieux->pieces as $piece)
                     @php
-                        $allPhotos = $piece->elements->flatMap(fn($e) => $e->photos)->values();
+                        $allPhotos = $piece->elements->flatMap(fn($e) => $e->photos)->sortBy('id')->values();
                     @endphp
 
                     <div id="piece-{{ $piece->id }}" class="border border-slate-200 rounded-lg mb-6 scroll-mt-6">

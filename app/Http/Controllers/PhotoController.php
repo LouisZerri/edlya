@@ -115,32 +115,24 @@ class PhotoController extends Controller
     private function addPhotoReferenceToObservations(Element $element, ?Piece $piece = null): void
     {
         $piece = $piece ?? $element->piece;
-        
+
         // Recharger pour avoir les photos à jour
         $piece->load('elements.photos');
-        
-        // Calculer le numéro de la photo dans la pièce
-        $photoNumber = 0;
+
+        // Calculer le numéro TOTAL de photos dans la pièce
+        // La nouvelle photo est la dernière, donc son numéro = total
+        $totalPhotos = 0;
         foreach ($piece->elements as $el) {
-            foreach ($el->photos as $photo) {
-                $photoNumber++;
-            }
-            if ($el->id === $element->id) {
-                break;
-            }
+            $totalPhotos += $el->photos->count();
         }
-        
-        // Récupérer le nombre de photos de cet élément
-        $element->refresh();
-        $elementPhotoCount = $element->photos->count();
-        
-        // Le numéro de la nouvelle photo
-        $newPhotoNumber = $photoNumber;
-        
+
+        // Le numéro de la nouvelle photo est le total (elle vient d'être ajoutée en dernier)
+        $newPhotoNumber = $totalPhotos;
+
         // Ajouter la référence dans les observations
         $observations = $element->observations ?? '';
         $photoRef = "(Photo $newPhotoNumber)";
-        
+
         // Vérifier si une référence photo existe déjà pour éviter les doublons
         if (!preg_match('/\(Photo \d+\)/', $observations)) {
             // Aucune référence, on ajoute
@@ -149,7 +141,7 @@ class PhotoController extends Controller
             // Des références existent, on ajoute la nouvelle
             $observations = trim($observations . ', ' . $photoRef);
         }
-        
+
         $element->update(['observations' => trim($observations)]);
     }
 
@@ -159,7 +151,7 @@ class PhotoController extends Controller
     private function recalculatePhotoReferences(Piece $piece): void
     {
         $piece->load('elements.photos');
-        
+
         $photoNumber = 0;
         foreach ($piece->elements as $element) {
             $photoRefs = [];
@@ -167,17 +159,17 @@ class PhotoController extends Controller
                 $photoNumber++;
                 $photoRefs[] = "(Photo $photoNumber)";
             }
-            
+
             // Retirer les anciennes références et ajouter les nouvelles
             $observations = $element->observations ?? '';
             // Supprimer toutes les références photo existantes
             $observations = preg_replace('/,?\s*\(Photo \d+\)/', '', $observations);
             $observations = trim($observations);
-            
+
             if (!empty($photoRefs)) {
                 $observations = trim($observations . ' ' . implode(', ', $photoRefs));
             }
-            
+
             $element->update(['observations' => trim($observations) ?: null]);
         }
     }
