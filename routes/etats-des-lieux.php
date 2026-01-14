@@ -74,7 +74,9 @@ Route::middleware('auth')->group(function () {
     Route::post('etats-des-lieux/{etatDesLieux}/compteurs', [CompteurController::class, 'store'])->name('compteurs.store');
     Route::put('compteurs/{compteur}', [CompteurController::class, 'update'])->name('compteurs.update');
     Route::delete('compteurs/{compteur}', [CompteurController::class, 'destroy'])->name('compteurs.destroy');
-    Route::delete('compteurs/{compteur}/photo', [CompteurController::class, 'deletePhoto'])->name('compteurs.delete-photo');
+    Route::delete('/compteurs/{compteur}/photo/{index?}', [CompteurController::class, 'deletePhoto'])
+    ->name('compteurs.delete-photo');
+
 
     // Clés
     Route::post('etats-des-lieux/{etatDesLieux}/cles', [CleController::class, 'store'])->name('cles.store');

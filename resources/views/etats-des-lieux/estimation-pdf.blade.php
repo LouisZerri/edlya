@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <title>Devis réparations - {{ $edlSortie->logement->nom }}</title>
@@ -7,11 +8,13 @@
         @page {
             margin: 0;
         }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 10px;
@@ -19,26 +22,46 @@
             color: #1e293b;
             padding: 40px 35px;
         }
+
         .header {
-            text-align: center;
+            display: table;
+            width: 100%;
             padding: 15px 0 20px;
             border-bottom: 2px solid #4f46e5;
             margin-bottom: 25px;
         }
+
+        .header-left {
+            display: table-cell;
+            width: 70%;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .header-right {
+            display: table-cell;
+            width: 30%;
+            vertical-align: middle;
+            text-align: right;
+        }
+
         .header h1 {
             font-size: 18px;
             color: #4f46e5;
             margin-bottom: 5px;
         }
+
         .header p {
             color: #64748b;
             font-size: 11px;
         }
+
         .info-section {
             display: table;
             width: 100%;
             margin-bottom: 25px;
         }
+
         .info-box {
             display: table-cell;
             width: 50%;
@@ -47,20 +70,24 @@
             background: #f8fafc;
             border: 1px solid #e2e8f0;
         }
+
         .info-box h3 {
             font-size: 11px;
             color: #4f46e5;
             margin-bottom: 8px;
             text-transform: uppercase;
         }
+
         .info-box p {
             margin-bottom: 3px;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 25px;
         }
+
         th {
             background: #4f46e5;
             color: white;
@@ -69,40 +96,50 @@
             font-size: 9px;
             text-transform: uppercase;
         }
+
         th:last-child {
             text-align: right;
         }
+
         td {
             padding: 10px 8px;
             border-bottom: 1px solid #e2e8f0;
             vertical-align: top;
         }
+
         td:last-child {
             text-align: right;
             white-space: nowrap;
         }
+
         tr:nth-child(even) {
             background: #f8fafc;
         }
+
         .totals {
             width: 250px;
             margin-left: auto;
         }
+
         .totals table {
             margin-bottom: 0;
         }
+
         .totals td {
             padding: 8px;
             border: none;
         }
+
         .totals tr:last-child {
             background: #4f46e5;
             color: white;
             font-weight: bold;
         }
+
         .totals tr:last-child td {
             padding: 12px 8px;
         }
+
         .notes {
             margin-top: 30px;
             padding: 15px;
@@ -110,15 +147,18 @@
             border: 1px solid #fcd34d;
             border-radius: 5px;
         }
+
         .notes h4 {
             font-size: 10px;
             color: #92400e;
             margin-bottom: 5px;
         }
+
         .notes p {
             font-size: 9px;
             color: #78350f;
         }
+
         .footer {
             margin-top: 40px;
             padding-top: 15px;
@@ -127,22 +167,26 @@
             font-size: 9px;
             color: #64748b;
         }
+
         .signatures {
             display: table;
             width: 100%;
             margin-top: 40px;
         }
+
         .signature-box {
             display: table-cell;
             width: 50%;
             padding: 15px;
             text-align: center;
         }
+
         .signature-box p {
             margin-bottom: 50px;
             font-size: 10px;
             color: #475569;
         }
+
         .signature-line {
             border-top: 1px solid #94a3b8;
             padding-top: 5px;
@@ -151,11 +195,18 @@
         }
     </style>
 </head>
+
 <body>
     {{-- Header --}}
     <div class="header">
-        <h1>DEVIS DE RÉPARATIONS</h1>
-        <p>État des lieux de sortie — {{ $edlSortie->date_realisation->format('d/m/Y') }}</p>
+        <div class="header-left">
+            <h1>DEVIS DE RÉPARATIONS</h1>
+            <p>État des lieux de sortie — {{ $edlSortie->date_realisation->format('d/m/Y') }}</p>
+        </div>
+        <div class="header-right">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICAgIDxwYXRoIGQ9Ik01MCAxMCBMODggNDIgTDg4IDg4IEwxMiA4OCBMMTIgNDIgWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGY0NmU1IiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogICAgPHBhdGggZD0iTTYgNDUgTDUwIDEwIEw5NCA0NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGY0NmU1IiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogICAgPGVsbGlwc2UgY3g9IjUwIiBjeT0iNTgiIHJ4PSIyMCIgcnk9IjE0IiBmaWxsPSJub25lIiBzdHJva2U9IiM0ZjQ2ZTUiIHN0cm9rZS13aWR0aD0iNCIvPgogICAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1OCIgcj0iNyIgZmlsbD0iIzRmNDZlNSIvPgo8L3N2Zz4="
+                alt="Edlya" style="width: 50px; height: 50px;">
+        </div>
     </div>
 
     {{-- Infos --}}
@@ -169,10 +220,10 @@
         <div class="info-box">
             <h3>Locataire</h3>
             <p><strong>{{ $edlSortie->locataire_nom }}</strong></p>
-            @if($edlSortie->locataire_email)
+            @if ($edlSortie->locataire_email)
                 <p>{{ $edlSortie->locataire_email }}</p>
             @endif
-            @if($edlSortie->locataire_telephone)
+            @if ($edlSortie->locataire_telephone)
                 <p>{{ $edlSortie->locataire_telephone }}</p>
             @endif
         </div>
@@ -229,7 +280,9 @@
     {{-- Notes --}}
     <div class="notes">
         <h4>Conditions</h4>
-        <p>Ce devis est établi sur la base des dégradations constatées lors de l'état des lieux de sortie. Les montants sont indicatifs et peuvent être ajustés après évaluation détaillée par un professionnel. Validité du devis : 30 jours.</p>
+        <p>Ce devis est établi sur la base des dégradations constatées lors de l'état des lieux de sortie. Les montants
+            sont indicatifs et peuvent être ajustés après évaluation détaillée par un professionnel. Validité du devis :
+            30 jours.</p>
     </div>
 
     {{-- Signatures --}}
@@ -249,4 +302,5 @@
         <p>Document généré le {{ now()->format('d/m/Y à H:i') }} — Edlya, propulsé par GEST'IMMO</p>
     </div>
 </body>
+
 </html>

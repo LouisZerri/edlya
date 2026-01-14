@@ -16,9 +16,26 @@ class Compteur extends Model
         'type',
         'numero',
         'index',
-        'photo',
+        'photos',
         'commentaire',
     ];
+
+    protected $casts = [
+        'photos' => 'array',
+    ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($compteur) {
+            if ($compteur->photos) {
+                foreach ($compteur->photos as $photo) {
+                    Storage::disk('public')->delete($photo);
+                }
+            }
+        });
+    }
 
     public function etatDesLieux(): BelongsTo
     {
@@ -38,10 +55,17 @@ class Compteur extends Model
 
     public function getPhotoUrlAttribute(): ?string
     {
-        if (!$this->photo) {
+        if (empty($this->photos)) {
             return null;
         }
+        return Storage::url($this->photos[0]);
+    }
 
-        return Storage::url($this->photo);
+    public function getPhotosUrlsAttribute(): array
+    {
+        if (empty($this->photos)) {
+            return [];
+        }
+        return array_map(fn($photo) => Storage::url($photo), $this->photos);
     }
 }

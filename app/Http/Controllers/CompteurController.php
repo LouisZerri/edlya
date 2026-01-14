@@ -98,19 +98,25 @@ class CompteurController extends Controller
             ->with('success', 'Compteur supprimé.');
     }
 
-    public function deletePhoto(Compteur $compteur): RedirectResponse
+    public function deletePhoto(Compteur $compteur, int $index = 0)
     {
-        $etatDesLieux = $compteur->etatDesLieux;
-        $this->authorize('update', $etatDesLieux);
+        $this->authorize('update', $compteur->etatDesLieux);
 
-        if ($compteur->photo) {
-            Storage::disk('public')->delete($compteur->photo);
-            $compteur->update(['photo' => null]);
+        if ($compteur->photos && isset($compteur->photos[$index])) {
+            $photos = $compteur->photos;
+            
+            // Supprimer le fichier
+            Storage::disk('public')->delete($photos[$index]);
+            
+            // Retirer du tableau
+            array_splice($photos, $index, 1);
+            
+            // Mettre à jour (null si vide)
+            $compteur->update([
+                'photos' => !empty($photos) ? array_values($photos) : null,
+            ]);
         }
 
-        return redirect()
-            ->route('etats-des-lieux.edit', $etatDesLieux)
-            ->withFragment('compteurs')
-            ->with('success', 'Photo supprimée.');
+        return back()->with('success', 'Photo supprimée');
     }
 }

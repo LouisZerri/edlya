@@ -86,22 +86,22 @@ class ImportController extends Controller
                     ->findOrFail($request->input('logement_id'));
             } else {
                 $adresse = $data['logement']['adresse'] ?? '';
-                $codePostal = '00000';
-                $ville = 'Non renseignée';
+                $codePostal = $data['logement']['code_postal'] ?? null;
+                $ville = $data['logement']['ville'] ?? null;
 
-                if (preg_match('/(\d{5})\s+(.+)$/i', $adresse, $matches)) {
-                    $codePostal = $matches[1];
-                    $ville = trim($matches[2]);
+                // Fallback : essayer d'extraire de l'adresse si non fournis
+                if ((!$codePostal || !$ville) && preg_match('/(\d{5})\s+(.+)$/i', $adresse, $matches)) {
+                    $codePostal = $codePostal ?: $matches[1];
+                    $ville = $ville ?: trim($matches[2]);
                 }
 
-                $nom = $adresse;
-                if (preg_match('/^(.+?),?\s*\d{5}/i', $adresse, $matchesNom)) {
-                    $nom = trim($matchesNom[1], ', ');
-                }
+                // Valeurs par défaut
+                $codePostal = $codePostal ?: '00000';
+                $ville = $ville ?: 'Non renseignée';
 
                 $logement = Logement::create([
                     'user_id' => Auth::id(),
-                    'nom' => $data['logement']['nom'] ?? $nom ?: 'Logement importé',
+                    'nom' => $data['logement']['nom'] ?? $adresse ?: 'Logement importé',
                     'adresse' => $adresse,
                     'code_postal' => $codePostal,
                     'ville' => $ville,
@@ -124,7 +124,7 @@ class ImportController extends Controller
                 'statut' => 'brouillon',
             ]);
 
-            // Créer les compteurs
+            // Créer les compteurs avec TOUTES les photos
             if (!empty($data['compteurs'])) {
                 $typesCompteurs = ['electricite', 'eau_froide', 'eau_chaude', 'gaz'];
 
@@ -134,14 +134,13 @@ class ImportController extends Controller
 
                         $numero = $compteurData['numero'] ?? null;
                         $index = $compteurData['index'] ?? null;
-
                         $photoIndices = $compteurData['photo_indices'] ?? [];
 
                         if ($numero || $index || !empty($photoIndices)) {
-                            $photoPath = null;
+                            $photoPaths = [];
 
-                            if (!empty($photoIndices)) {
-                                $photoIndex = $photoIndices[0];
+                            // Sauvegarder TOUTES les photos du compteur
+                            foreach ($photoIndices as $photoIndex) {
                                 $arrayIndex = $photoIndex - 1;
 
                                 if (isset($extractedPhotos[$arrayIndex]) && empty($extractedPhotos[$arrayIndex]['used'])) {
@@ -149,10 +148,9 @@ class ImportController extends Controller
 
                                     if ($tempPhotoPath && file_exists($tempPhotoPath)) {
                                         $filename = 'compteurs/' . uniqid() . '_imported.png';
-                                        $content = file_get_contents($tempPhotoPath);
-                                        Storage::disk('public')->put($filename, $content);
+                                        Storage::disk('public')->put($filename, file_get_contents($tempPhotoPath));
 
-                                        $photoPath = $filename;
+                                        $photoPaths[] = $filename;
                                         $extractedPhotos[$arrayIndex]['used'] = true;
                                         unlink($tempPhotoPath);
                                     }
@@ -165,7 +163,7 @@ class ImportController extends Controller
                                 'numero' => $numero,
                                 'index' => $index,
                                 'commentaire' => $compteurData['commentaire'] ?? null,
-                                'photo' => $photoPath,
+                                'photos' => !empty($photoPaths) ? $photoPaths : null,
                             ]);
                         }
                     }
@@ -219,6 +217,40 @@ class ImportController extends Controller
                         'ordre' => $ordre + 1,
                     ]);
 
+                    // Sauvegarder les photos générales de la pièce
+                    $piecePhotoIndices = $pieceData['photo_indices'] ?? [];
+                    if (!empty($piecePhotoIndices)) {
+                        $elementGeneral = Element::create([
+                            'piece_id' => $piece->id,
+                            'nom' => 'Vue générale',
+                            'type' => 'autre',
+                            'etat' => 'bon',
+                            'observations' => 'Photos générales de la pièce',
+                        ]);
+
+                        foreach ($piecePhotoIndices as $photoIndex) {
+                            $arrayIndex = $photoIndex - 1;
+
+                            if (isset($extractedPhotos[$arrayIndex]) && empty($extractedPhotos[$arrayIndex]['used'])) {
+                                $tempPhotoPath = $extractedPhotos[$arrayIndex]['path'] ?? null;
+
+                                if ($tempPhotoPath && file_exists($tempPhotoPath)) {
+                                    $filename = 'photos/' . uniqid() . '_imported.png';
+                                    Storage::disk('public')->put($filename, file_get_contents($tempPhotoPath));
+
+                                    Photo::create([
+                                        'element_id' => $elementGeneral->id,
+                                        'chemin' => $filename,
+                                    ]);
+
+                                    $extractedPhotos[$arrayIndex]['used'] = true;
+                                    unlink($tempPhotoPath);
+                                }
+                            }
+                        }
+                    }
+
+                    // Créer les éléments de la pièce
                     if (!empty($pieceData['elements'])) {
                         foreach ($pieceData['elements'] as $elementOrdre => $elementData) {
                             $etat = $this->convertEtat($elementData['etat'] ?? 'bon_etat');
@@ -231,6 +263,7 @@ class ImportController extends Controller
                                 'observations' => $elementData['observations'] ?? null,
                             ]);
 
+                            // Photos des éléments
                             $photoIndices = $elementData['photo_indices'] ?? [];
                             foreach ($photoIndices as $photoIndex) {
                                 $arrayIndex = $photoIndex - 1;
@@ -238,7 +271,7 @@ class ImportController extends Controller
                                 if (isset($extractedPhotos[$arrayIndex]) && empty($extractedPhotos[$arrayIndex]['used'])) {
                                     $photoPath = $extractedPhotos[$arrayIndex]['path'] ?? null;
 
-                                    if ($photoPath) {
+                                    if ($photoPath && file_exists($photoPath)) {
                                         $savedPath = $importService->saveExtractedPhoto($photoPath);
 
                                         if ($savedPath) {

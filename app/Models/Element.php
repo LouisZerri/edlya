@@ -65,7 +65,7 @@ class Element extends Model
     public function getEtatCouleurAttribute(): string
     {
         return match($this->etat) {
-            'neuf' => 'bg-green-100 text-green-700',
+            'neuf' => 'bg-purple-100 text-purple-700',
             'tres_bon' => 'bg-emerald-100 text-emerald-700',
             'bon' => 'bg-blue-100 text-blue-700',
             'usage' => 'bg-amber-100 text-amber-700',

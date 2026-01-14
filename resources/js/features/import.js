@@ -128,6 +128,8 @@ document.addEventListener('DOMContentLoaded', function() {
         extractedData.date_realisation = document.getElementById('preview-date').value;
         extractedData.logement = extractedData.logement || {};
         extractedData.logement.adresse = document.getElementById('preview-adresse').value;
+        extractedData.logement.code_postal = document.getElementById('preview-code-postal')?.value || null;
+        extractedData.logement.ville = document.getElementById('preview-ville')?.value || null;
         extractedData.logement.type_bien = document.getElementById('preview-type-bien').value;
         extractedData.logement.surface = document.getElementById('preview-surface').value || null;
         extractedData.locataire = extractedData.locataire || {};
@@ -193,6 +195,12 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('preview-adresse').value = data.logement?.adresse || '';
         document.getElementById('preview-type-bien').value = data.logement?.type_bien || 'appartement';
         document.getElementById('preview-surface').value = data.logement?.surface || '';
+        
+        // Code postal et ville
+        const codePostalInput = document.getElementById('preview-code-postal');
+        const villeInput = document.getElementById('preview-ville');
+        if (codePostalInput) codePostalInput.value = data.logement?.code_postal || '';
+        if (villeInput) villeInput.value = data.logement?.ville || '';
 
         // Logement existant
         const logementExistantDiv = document.getElementById('logement-existant');
@@ -207,6 +215,87 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('preview-locataire-nom').value = data.locataire?.nom || '';
         document.getElementById('preview-locataire-email').value = data.locataire?.email || '';
         document.getElementById('preview-locataire-telephone').value = data.locataire?.telephone || '';
+
+        // Compteurs
+        const compteursContainer = document.getElementById('preview-compteurs');
+        const compteursCount = document.getElementById('compteurs-count');
+        const noCompteurs = document.getElementById('no-compteurs');
+
+        // Convertir l'objet compteurs en array
+        let compteursArray = [];
+        if (data.compteurs) {
+            if (Array.isArray(data.compteurs)) {
+                compteursArray = data.compteurs;
+            } else {
+                // C'est un objet avec les types comme clés
+                for (const [type, compteur] of Object.entries(data.compteurs)) {
+                    if (compteur && (compteur.numero || compteur.index)) {
+                        compteursArray.push({ type, ...compteur });
+                    }
+                }
+            }
+        }
+
+        if (compteursArray.length > 0) {
+            compteursCount.textContent = compteursArray.length;
+            noCompteurs.classList.add('hidden');
+            
+            const typeLabels = {
+                'electricite': '⚡ Électricité',
+                'eau_froide': '💧 Eau froide',
+                'eau_chaude': '🔥 Eau chaude',
+                'gaz': '🔵 Gaz',
+            };
+            
+            let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3">';
+            compteursArray.forEach(compteur => {
+                const label = typeLabels[compteur.type] || compteur.type;
+                html += `
+                    <div class="bg-white border border-gray-200 rounded-lg p-3">
+                        <div class="font-medium text-gray-800 mb-1">${label}</div>
+                        <div class="text-sm text-gray-600">
+                            ${compteur.numero ? `<span class="mr-3">N° ${compteur.numero}</span>` : ''}
+                            ${compteur.index ? `<span class="font-mono bg-gray-100 px-2 py-0.5 rounded">${compteur.index}</span>` : '<span class="text-gray-400">Index non renseigné</span>'}
+                        </div>
+                        ${compteur.commentaire ? `<div class="text-xs text-gray-500 mt-1">${compteur.commentaire}</div>` : ''}
+                    </div>
+                `;
+            });
+            html += '</div>';
+            compteursContainer.innerHTML = html;
+        } else {
+            compteursCount.textContent = '0';
+            noCompteurs.classList.remove('hidden');
+            compteursContainer.innerHTML = '';
+        }
+
+        // Clés
+        const clesContainer = document.getElementById('preview-cles');
+        const clesCount = document.getElementById('cles-count');
+        const noCles = document.getElementById('no-cles');
+
+        if (data.cles && data.cles.length > 0) {
+            const totalCles = data.cles.reduce((sum, cle) => sum + (cle.nombre || 1), 0);
+            clesCount.textContent = totalCles;
+            noCles.classList.add('hidden');
+            
+            let html = '<div class="flex flex-wrap gap-2">';
+            data.cles.forEach(cle => {
+                html += `
+                    <div class="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                        <span class="text-lg">🔑</span>
+                        <span class="font-medium text-gray-800">${cle.type}</span>
+                        <span class="bg-amber-100 text-amber-700 text-xs font-medium px-2 py-0.5 rounded-full">×${cle.nombre || 1}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            clesContainer.innerHTML = html;
+        } else {
+            clesCount.textContent = '0';
+            noCles.classList.remove('hidden');
+            clesContainer.innerHTML = '';
+        }
 
         // Pièces
         const piecesContainer = document.getElementById('preview-pieces');

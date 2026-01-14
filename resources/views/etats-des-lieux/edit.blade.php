@@ -138,21 +138,26 @@
                                             class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
                                     </div>
 
-                                    {{-- Photo --}}
+                                    {{-- Photos du compteur --}}
                                     <div>
-                                        <label class="block text-xs text-slate-500 mb-1">Photo du compteur</label>
-                                        @if ($compteur?->photo)
-                                            <div class="flex items-center gap-3 mb-2">
-                                                <a href="{{ $compteur->photo_url }}" target="_blank" class="block">
-                                                    <img src="{{ $compteur->photo_url }}"
-                                                        alt="Compteur {{ $config['label'] }}"
-                                                        class="w-16 h-16 object-cover rounded-lg border border-slate-200">
-                                                </a>
-                                                <button type="button"
-                                                    class="text-xs text-red-600 hover:text-red-700 cursor-pointer"
-                                                    onclick="if(confirm('Supprimer cette photo ?')) { document.getElementById('delete-photo-{{ $type }}').submit(); }">
-                                                    Supprimer la photo
-                                                </button>
+                                        <label class="block text-xs text-slate-500 mb-1">Photo(s) du compteur</label>
+                                        @if ($compteur?->photos && count($compteur->photos) > 0)
+                                            <div class="flex flex-wrap gap-2 mb-2">
+                                                @foreach ($compteur->photos_urls as $index => $photoUrl)
+                                                    <div class="relative group">
+                                                        <a href="{{ $photoUrl }}" target="_blank" class="block">
+                                                            <img src="{{ $photoUrl }}"
+                                                                alt="Compteur {{ $config['label'] }} - Photo {{ $index + 1 }}"
+                                                                class="w-16 h-16 object-cover rounded-lg border border-slate-200">
+                                                        </a>
+                                                        <button type="button"
+                                                            class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 text-xs cursor-pointer flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            onclick="if(confirm('Supprimer cette photo ?')) { document.getElementById('delete-photo-{{ $type }}-{{ $index }}').submit(); }"
+                                                            title="Supprimer">
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                @endforeach
                                             </div>
                                         @endif
                                         <label class="cursor-pointer block">
@@ -164,7 +169,7 @@
                                                         d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                                 </svg>
                                                 <span class="text-xs text-slate-600 compteur-file-label"
-                                                    data-type="{{ $type }}">{{ $compteur?->photo ? 'Changer la photo' : 'Ajouter une photo' }}</span>
+                                                    data-type="{{ $type }}">Ajouter une photo</span>
                                             </div>
                                             <input type="file" name="photo" accept="image/*"
                                                 class="hidden compteur-file-input" data-type="{{ $type }}">
@@ -179,12 +184,17 @@
                             </form>
 
                             @if ($compteur)
-                                {{-- Formulaire séparé pour supprimer la photo --}}
-                                <form method="POST" action="{{ route('compteurs.delete-photo', $compteur) }}"
-                                    id="delete-photo-{{ $type }}" class="hidden">
-                                    @csrf
-                                    @method('DELETE')
-                                </form>
+                                {{-- Formulaires pour supprimer chaque photo individuellement --}}
+                                @if ($compteur->photos)
+                                    @foreach ($compteur->photos as $index => $photo)
+                                        <form method="POST"
+                                            action="{{ route('compteurs.delete-photo', ['compteur' => $compteur, 'index' => $index]) }}"
+                                            id="delete-photo-{{ $type }}-{{ $index }}" class="hidden">
+                                            @csrf
+                                            @method('DELETE')
+                                        </form>
+                                    @endforeach
+                                @endif
 
                                 {{-- Formulaire pour supprimer le compteur --}}
                                 <form method="POST" action="{{ route('compteurs.destroy', $compteur) }}"
@@ -694,6 +704,28 @@
                                                         </button>
                                                     </div>
                                                 </div>
+
+                                                {{-- Photos associées à cet élément --}}
+                                                @if ($element->photos->isNotEmpty())
+                                                    <div class="flex items-center gap-2 pt-2">
+                                                        <span class="text-xs text-slate-500">Photos :</span>
+                                                        <div class="flex flex-wrap gap-1">
+                                                            @foreach ($element->photos as $photo)
+                                                                @php
+                                                                    // Calculer l'index global de la photo dans la pièce
+                                                                    $globalIndex =
+                                                                        $allPhotos->search(
+                                                                            fn($p) => $p->id === $photo->id,
+                                                                        ) + 1;
+                                                                @endphp
+                                                                <a href="{{ $photo->url }}" target="_blank"
+                                                                    class="inline-block bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-medium hover:bg-green-200 transition-colors">
+                                                                    Photo {{ $globalIndex }}
+                                                                </a>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                @endif
                                             </form>
                                         </div>
                                     @endforeach

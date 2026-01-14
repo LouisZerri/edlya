@@ -283,7 +283,9 @@ class ImportPdfService
                 "date_realisation": "YYYY-MM-DD",
                 "logement": {
                     "nom": "Type du bien (Appartement T3, Studio meublé, Maison, etc.) - PAS l'adresse",
-                    "adresse": "Adresse complète avec numéro, rue, code postal et ville",
+                    "adresse": "Numéro et rue UNIQUEMENT (ex: 11 rue du Docteur Roux, porte 4) - SANS code postal ni ville",
+                    "code_postal": "Code postal (ex: 33480)",
+                    "ville": "Nom de la ville (ex: Castelnau de Médoc)",
                     "type_bien": "appartement" ou "maison" ou "studio",
                     "surface": nombre en m² ou null,
                     "nombre_pieces": nombre ou null
@@ -301,6 +303,7 @@ class ImportPdfService
                     {
                         "nom": "Nom exact de la pièce tel qu'écrit dans le document",
                         "observations": "Observations générales de la pièce ou null",
+                        "photo_indices": [6, 7, 8, 9, 10],
                         "elements": [
                             {
                                 "nom": "Nom exact de l'élément",
@@ -325,6 +328,12 @@ class ImportPdfService
                 "observations_generales": "Toutes les observations générales du document"
             }
 
+            ADRESSE - TRÈS IMPORTANT :
+            - "adresse" = SEULEMENT le numéro et la rue (ex: "11 rue du Docteur Roux, porte 4")
+            - "code_postal" = SEULEMENT le code postal (ex: "33480")
+            - "ville" = SEULEMENT le nom de la ville (ex: "Castelnau de Médoc")
+            - NE PAS inclure le code postal ou la ville dans le champ "adresse"
+
             COMPTEURS - TRÈS IMPORTANT :
             - Extraire le numéro du compteur (N°, numéro, matricule, PDL, PCE, etc.)
             - Extraire l'index/relevé. Si "non relevé" ou vide → mettre null pour index
@@ -337,9 +346,16 @@ class ImportPdfService
             - RÈGLE : Si l'observation d'un compteur contient "Photo 1" ET qu'une photo est légendée "Photo 1 - Eau" ou similaire :
             → Ajouter 1 dans photo_indices du compteur correspondant
             - MÊME si le relevé est "non relevé", s'il y a une référence photo, TOUJOURS remplir photo_indices
+            - Un compteur peut avoir PLUSIEURS photos (ex: photo_indices: [1, 2, 3, 4])
+
+            PHOTOS GÉNÉRALES DE PIÈCES - IMPORTANT :
+            - Cherche la mention "Ont été prises les photos suivantes concernant la pièce en général : Photo X Photo Y..."
+            - Ces photos générales doivent aller dans photo_indices au niveau de la PIÈCE (pas des éléments)
+            - Exemple : SALON avec "Photo 6 Photo 7 Photo 8 Photo 9 Photo 10" → piece.photo_indices = [6, 7, 8, 9, 10]
+            - Les photos d'éléments spécifiques (Four, Mur, etc.) vont dans les photo_indices de l'élément concerné
 
             CLÉS - TRÈS IMPORTANT :
-            - Cherche la section "REMISE DES CLÉS" dans le document
+            - Cherche la section "REMISE DES CLÉS" ou "RESTITUTION DES CLÉS" dans le document
             - Extrait chaque type de clé avec son nombre
             - Cherche les mentions "Photo X" dans la colonne observations/commentaires des clés
             - Si une clé a une photo associée (ex: "Photo 21 - Porte principale"), ajoute l'indice dans photo_indices
@@ -355,12 +371,30 @@ class ImportPdfService
                 "photo_indices": [1]
             }
 
+            EXEMPLE COMPTEUR AVEC PLUSIEURS PHOTOS :
+            - Compteur ÉLECTRICITÉ avec photos "Photo 1 Photo 2 Photo 3 Photo 4" dans les observations
+            → electricite = {
+                "numero": "16174095495231",
+                "index": "HP : 7548 kWh, HC : 9808 kWh",
+                "commentaire": null,
+                "photo_indices": [1, 2, 3, 4]
+            }
+
+            EXEMPLE PIÈCE AVEC PHOTOS GÉNÉRALES :
+            - SALON avec "Ont été prises les photos suivantes concernant la pièce en général : Photo 6 Photo 7 Photo 8 Photo 9 Photo 10"
+            → piece = {
+                "nom": "SALON",
+                "observations": null,
+                "photo_indices": [6, 7, 8, 9, 10],
+                "elements": [...]
+            }
+
             EXEMPLE CLÉS :
-            - "Porte principale" - 2 clés - Photo 21
-            - "Parties communes" - 2 clés - Photo 22
+            - "Porte principale" - 2 clés - Photo 40
+            - "Parties communes" - 1 clé - Photo 41
             → cles = [
-                {"type": "Porte principale", "nombre": 2, "commentaire": null, "photo_indices": [21]},
-                {"type": "Parties communes", "nombre": 2, "commentaire": null, "photo_indices": [22]}
+                {"type": "Porte principale", "nombre": 2, "commentaire": null, "photo_indices": [40]},
+                {"type": "Parties communes", "nombre": 1, "commentaire": null, "photo_indices": [41]}
             ]
             {$photoInstruction}
 

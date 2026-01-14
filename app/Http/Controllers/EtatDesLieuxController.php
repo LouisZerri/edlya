@@ -165,7 +165,18 @@ class EtatDesLieuxController extends Controller
 
         $etatDesLieux->load(['logement', 'user', 'pieces.elements.photos', 'compteurs', 'cles']);
 
-        $pdf = Pdf::loadView('etats-des-lieux.pdf', compact('etatDesLieux'))
+        // Récupérer l'EDL d'entrée si c'est un EDL de sortie (pour comparaison)
+        $edlEntree = null;
+        if ($etatDesLieux->type === 'sortie') {
+            $edlEntree = EtatDesLieux::with(['pieces.elements', 'compteurs', 'cles'])
+                ->where('logement_id', $etatDesLieux->logement_id)
+                ->where('type', 'entree')
+                ->where('id', '!=', $etatDesLieux->id)
+                ->orderBy('date_realisation', 'desc')
+                ->first();
+        }
+
+        $pdf = Pdf::loadView('etats-des-lieux.pdf', compact('etatDesLieux', 'edlEntree'))
             ->setPaper('A4', 'portrait');
 
         $type = $etatDesLieux->type === 'entree' ? 'entree' : 'sortie';

@@ -14,7 +14,7 @@ return new class extends Migration
             $table->enum('type', ['electricite', 'eau_froide', 'eau_chaude', 'gaz']);
             $table->string('numero')->nullable();
             $table->string('index')->nullable();
-            $table->string('photo')->nullable();
+            $table->json('photos')->nullable();
             $table->text('commentaire')->nullable();
             $table->timestamps();
 
