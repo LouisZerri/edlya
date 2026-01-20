@@ -2,30 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PhotoRequest;
 use App\Models\Element;
 use App\Models\Piece;
 use App\Models\Photo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class PhotoController extends Controller
 {
-    public function store(Request $request, Element $element): RedirectResponse
+    public function store(PhotoRequest $request, Element $element): RedirectResponse
     {
-        $this->authorizeAccess($element);
-
-        $request->validate([
-            'photo' => ['required', 'image', 'max:10240'],
-            'legende' => ['nullable', 'string', 'max:255'],
-            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
-        ], [
-            'photo.required' => 'La photo est requise.',
-            'photo.image' => 'Le fichier doit être une image.',
-            'photo.max' => 'L\'image ne doit pas dépasser 10 Mo.',
-        ]);
+        $this->authorize('update', $element);
 
         $path = $request->file('photo')->store('photos', 'public');
 
@@ -47,10 +36,7 @@ class PhotoController extends Controller
 
     public function storeForPiece(Request $request, Piece $piece): RedirectResponse
     {
-        // Vérifier que l'utilisateur a accès à cette pièce
-        if ($piece->etatDesLieux->user_id != Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('update', $piece);
 
         $request->validate([
             'element_id' => ['required', 'exists:elements,id'],
@@ -90,7 +76,7 @@ class PhotoController extends Controller
 
     public function destroy(Photo $photo): RedirectResponse
     {
-        $this->authorizeAccessPhoto($photo);
+        $this->authorize('delete', $photo);
 
         $etatDesLieuxId = $photo->element->piece->etat_des_lieux_id;
         $pieceId = $photo->element->piece_id;
@@ -174,17 +160,4 @@ class PhotoController extends Controller
         }
     }
 
-    private function authorizeAccess(Element $element): void
-    {
-        if ($element->piece->etatDesLieux->user_id != Auth::id()) {
-            abort(403);
-        }
-    }
-
-    private function authorizeAccessPhoto(Photo $photo): void
-    {
-        if ($photo->element->piece->etatDesLieux->user_id != Auth::id()) {
-            abort(403);
-        }
-    }
 }

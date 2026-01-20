@@ -19,17 +19,6 @@ class Photo extends Model
         'longitude',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::deleting(function ($photo) {
-            if ($photo->chemin) {
-                Storage::disk('public')->delete($photo->chemin);
-            }
-        });
-    }
-
     public function element(): BelongsTo
     {
         return $this->belongsTo(Element::class);

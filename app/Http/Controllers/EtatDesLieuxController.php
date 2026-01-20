@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\EtatDesLieuxRequest;
+use App\Http\Requests\GenererPiecesRequest;
 use App\Models\EtatDesLieux;
 use App\Models\Logement;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -201,15 +203,11 @@ class EtatDesLieuxController extends Controller
     /**
      * API - Génération automatique des pièces
      */
-    public function genererPieces(Request $request, EtatDesLieux $etatDesLieux)
+    public function genererPieces(GenererPiecesRequest $request, EtatDesLieux $etatDesLieux)
     {
         $this->authorize('update', $etatDesLieux);
 
-        $request->validate([
-            'typologie' => ['required', 'string'],
-        ]);
-
-        $typologie = $request->input('typologie');
+        $typologie = $request->validated('typologie');
         $typologies = config('typologies');
 
         if (!isset($typologies[$typologie])) {

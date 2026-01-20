@@ -2,45 +2,37 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PartageRequest;
 use App\Mail\PartageEtatDesLieux;
 use App\Models\EtatDesLieux;
 use App\Models\Partage;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
 class PartageController extends Controller
 {
-
-    public function store(Request $request, EtatDesLieux $etatDesLieux): JsonResponse
+    public function store(PartageRequest $request, EtatDesLieux $etatDesLieux): JsonResponse
     {
-        if ($etatDesLieux->user_id !== Auth::id()) {
-            return response()->json(['error' => 'Accès non autorisé'], 403);
-        }
+        $this->authorize('view', $etatDesLieux);
 
-        $request->validate([
-            'type' => ['required', 'in:email,lien'],
-            'email' => ['required_if:type,email', 'nullable', 'email'],
-            'duree' => ['required', 'integer', 'min:1', 'max:30'],
-        ]);
+        $validated = $request->validated();
 
         $partage = Partage::create([
             'etat_des_lieux_id' => $etatDesLieux->id,
             'token' => Partage::generateToken(),
-            'email' => $request->type === 'email' ? $request->email : null,
-            'type' => $request->type,
-            'expire_at' => now()->addDays((int) $request->duree),
+            'email' => $validated['type'] === 'email' ? $validated['email'] : null,
+            'type' => $validated['type'],
+            'expire_at' => now()->addDays((int) $validated['duree']),
         ]);
 
-        if ($request->type === 'email') {
-            Mail::to($request->email)->send(new PartageEtatDesLieux($etatDesLieux, $partage));
+        if ($validated['type'] === 'email') {
+            Mail::to($validated['email'])->send(new PartageEtatDesLieux($etatDesLieux, $partage));
         }
 
         return response()->json([
             'success' => true,
-            'message' => $request->type === 'email'
-                ? 'Email envoyé avec succès à ' . $request->email
+            'message' => $validated['type'] === 'email'
+                ? 'Email envoyé avec succès à ' . $validated['email']
                 : 'Lien généré avec succès',
             'url' => $partage->url,
             'expire_at' => $partage->expire_at->format('d/m/Y à H:i'),
@@ -91,9 +83,7 @@ class PartageController extends Controller
 
     public function history(EtatDesLieux $etatDesLieux): JsonResponse
     {
-        if ($etatDesLieux->user_id !== Auth::id()) {
-            return response()->json(['error' => 'Accès non autorisé'], 403);
-        }
+        $this->authorize('view', $etatDesLieux);
 
         $partages = $etatDesLieux->partages()
             ->orderBy('created_at', 'desc')
@@ -116,9 +106,7 @@ class PartageController extends Controller
 
     public function destroy(Partage $partage): JsonResponse
     {
-        if ($partage->etatDesLieux->user_id !== Auth::id()) {
-            return response()->json(['error' => 'Accès non autorisé'], 403);
-        }
+        $this->authorize('view', $partage->etatDesLieux);
 
         $partage->delete();
 

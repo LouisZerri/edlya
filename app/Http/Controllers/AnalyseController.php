@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AnalyseDegradationRequest;
+use App\Http\Requests\AnalysePhotoRequest;
+use App\Http\Requests\AnalyseUploadRequest;
+use App\Http\Requests\AppliquerElementsRequest;
 use App\Models\Piece;
 use App\Models\Element;
 use App\Models\Photo;
 use App\Services\AnthropicService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class AnalyseController extends Controller
 {
@@ -16,18 +19,11 @@ class AnalyseController extends Controller
         private AnthropicService $anthropicService
     ) {}
 
-    public function uploadPhoto(Request $request): JsonResponse
+    public function uploadPhoto(AnalyseUploadRequest $request): JsonResponse
     {
-        $request->validate([
-            'photo' => ['required', 'image', 'max:10240'],
-            'piece_id' => ['required', 'exists:pieces,id'],
-        ]);
+        $piece = Piece::findOrFail($request->validated('piece_id'));
 
-        $piece = Piece::findOrFail($request->piece_id);
-
-        if ($piece->etatDesLieux->user_id !== Auth::id()) {
-            return response()->json(['error' => 'Accès non autorisé'], 403);
-        }
+        $this->authorize('update', $piece);
 
         $path = $request->file('photo')->store('analyse-temp', 'public');
 
@@ -37,20 +33,13 @@ class AnalyseController extends Controller
         ]);
     }
 
-    public function analyserPhoto(Request $request): JsonResponse
+    public function analyserPhoto(AnalysePhotoRequest $request): JsonResponse
     {
-        $request->validate([
-            'photo_path' => ['required', 'string'],
-            'piece_id' => ['required', 'exists:pieces,id'],
-        ]);
+        $piece = Piece::findOrFail($request->validated('piece_id'));
 
-        $piece = Piece::findOrFail($request->piece_id);
+        $this->authorize('update', $piece);
 
-        if ($piece->etatDesLieux->user_id !== Auth::id()) {
-            return response()->json(['error' => 'Accès non autorisé'], 403);
-        }
-
-        $elements = $this->anthropicService->analyserPiece($request->photo_path);
+        $elements = $this->anthropicService->analyserPiece($request->validated('photo_path'));
 
         if ($elements === null) {
             return response()->json([
@@ -64,24 +53,13 @@ class AnalyseController extends Controller
         ]);
     }
 
-    public function appliquerElements(Request $request): JsonResponse
+    public function appliquerElements(AppliquerElementsRequest $request): JsonResponse
     {
-        $request->validate([
-            'piece_id' => ['required', 'exists:pieces,id'],
-            'elements' => ['required', 'array'],
-            'elements.*.type' => ['required', 'string'],
-            'elements.*.nom' => ['required', 'string'],
-            'elements.*.etat' => ['required', 'string'],
-            'elements.*.observations' => ['nullable', 'string'],
-        ]);
+        $piece = Piece::findOrFail($request->validated('piece_id'));
 
-        $piece = Piece::findOrFail($request->piece_id);
+        $this->authorize('update', $piece);
 
-        if ($piece->etatDesLieux->user_id !== Auth::id()) {
-            return response()->json(['error' => 'Accès non autorisé'], 403);
-        }
-
-        foreach ($request->elements as $elementData) {
+        foreach ($request->validated('elements') as $elementData) {
             $piece->elements()->create([
                 'type' => $elementData['type'],
                 'nom' => $elementData['nom'],
@@ -92,33 +70,24 @@ class AnalyseController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => count($request->elements) . ' élément(s) ajouté(s).',
+            'message' => count($request->validated('elements')) . ' élément(s) ajouté(s).',
         ]);
     }
 
-    public function analyserDegradation(Request $request): JsonResponse
+    public function analyserDegradation(AnalyseDegradationRequest $request): JsonResponse
     {
-        $request->validate([
-            'element_id' => ['required', 'exists:elements,id'],
-            'photo_id' => ['required', 'exists:photos,id'],
-            'etat_entree' => ['required', 'string'],
-            'observations' => ['nullable', 'string'],
-        ]);
+        $element = Element::with('piece.etatDesLieux')->findOrFail($request->validated('element_id'));
+        $photo = Photo::findOrFail($request->validated('photo_id'));
 
-        $element = Element::with('piece.etatDesLieux')->findOrFail($request->element_id);
-        $photo = Photo::findOrFail($request->photo_id);
-
-        if ($element->piece->etatDesLieux->user_id !== Auth::id()) {
-            return response()->json(['error' => 'Accès non autorisé'], 403);
-        }
+        $this->authorize('update', $element);
 
         $result = $this->anthropicService->analyserDegradations(
             $photo->chemin,
             $element->nom,
             $element->type,
-            $request->etat_entree,
+            $request->validated('etat_entree'),
             $element->etat,
-            $request->observations ?? ''
+            $request->validated('observations', '')
         );
 
         if ($result === null) {

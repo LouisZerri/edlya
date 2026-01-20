@@ -2,26 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CompteurRequest;
 use App\Models\Compteur;
 use App\Models\EtatDesLieux;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class CompteurController extends Controller
 {
-    public function store(Request $request, EtatDesLieux $etatDesLieux): RedirectResponse
+    public function store(CompteurRequest $request, EtatDesLieux $etatDesLieux): RedirectResponse
     {
         $this->authorize('update', $etatDesLieux);
 
-        $validated = $request->validate([
-            'type' => ['required', 'in:electricite,eau_froide,eau_chaude,gaz'],
-            'numero' => ['nullable', 'string', 'max:255'],
-            'index' => ['nullable', 'string', 'max:255'],
-            'commentaire' => ['nullable', 'string', 'max:1000'],
-            'photo' => ['nullable', 'image', 'max:10240'],
-        ]);
+        $validated = $request->validated();
 
         // Vérifier si ce type de compteur existe déjà
         $compteur = $etatDesLieux->compteurs()->where('type', $validated['type'])->first();
@@ -54,17 +47,11 @@ class CompteurController extends Controller
             ->with('success', $message);
     }
 
-    public function update(Request $request, Compteur $compteur): RedirectResponse
+    public function update(CompteurRequest $request, Compteur $compteur): RedirectResponse
     {
-        $etatDesLieux = $compteur->etatDesLieux;
-        $this->authorize('update', $etatDesLieux);
+        $this->authorize('update', $compteur);
 
-        $validated = $request->validate([
-            'numero' => ['nullable', 'string', 'max:255'],
-            'index' => ['nullable', 'string', 'max:255'],
-            'commentaire' => ['nullable', 'string', 'max:1000'],
-            'photo' => ['nullable', 'image', 'max:10240'],
-        ]);
+        $validated = $request->validated();
 
         if ($request->hasFile('photo')) {
             if ($compteur->photo) {
@@ -76,15 +63,16 @@ class CompteurController extends Controller
         $compteur->update($validated);
 
         return redirect()
-            ->route('etats-des-lieux.edit', $etatDesLieux)
+            ->route('etats-des-lieux.edit', $compteur->etatDesLieux)
             ->withFragment('compteurs')
             ->with('success', 'Compteur mis à jour.');
     }
 
     public function destroy(Compteur $compteur): RedirectResponse
     {
+        $this->authorize('delete', $compteur);
+
         $etatDesLieux = $compteur->etatDesLieux;
-        $this->authorize('update', $etatDesLieux);
 
         if ($compteur->photo) {
             Storage::disk('public')->delete($compteur->photo);
@@ -100,7 +88,7 @@ class CompteurController extends Controller
 
     public function deletePhoto(Compteur $compteur, int $index = 0)
     {
-        $this->authorize('update', $compteur->etatDesLieux);
+        $this->authorize('update', $compteur);
 
         if ($compteur->photos && isset($compteur->photos[$index])) {
             $photos = $compteur->photos;

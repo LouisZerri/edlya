@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ImportAnalyzeRequest;
+use App\Http\Requests\ImportStoreRequest;
 use App\Models\Cle;
 use App\Models\EtatDesLieux;
 use App\Models\Logement;
@@ -10,10 +12,8 @@ use App\Models\Element;
 use App\Models\Photo;
 use App\Models\Compteur;
 use App\Services\ImportPdfService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class ImportController extends Controller
@@ -23,12 +23,8 @@ class ImportController extends Controller
         return view('etats-des-lieux.import');
     }
 
-    public function analyze(Request $request, ImportPdfService $importService)
+    public function analyze(ImportAnalyzeRequest $request, ImportPdfService $importService)
     {
-        $request->validate([
-            'pdf' => ['required', 'file', 'mimes:pdf', 'max:20480'],
-        ]);
-
         try {
             $file = $request->file('pdf');
             $fullPath = $file->getRealPath();
@@ -67,23 +63,18 @@ class ImportController extends Controller
         }
     }
 
-    public function store(Request $request, ImportPdfService $importService)
+    public function store(ImportStoreRequest $request, ImportPdfService $importService)
     {
-        $request->validate([
-            'data' => ['required', 'array'],
-            'logement_id' => ['nullable', 'exists:logements,id'],
-        ]);
-
-        $data = $request->input('data');
+        $data = $request->validated('data');
         $extractedPhotos = session('imported_photos', []);
 
         try {
             DB::beginTransaction();
 
             // Créer ou récupérer le logement
-            if ($request->filled('logement_id')) {
+            if ($request->validated('logement_id')) {
                 $logement = Logement::where('user_id', Auth::id())
-                    ->findOrFail($request->input('logement_id'));
+                    ->findOrFail($request->validated('logement_id'));
             } else {
                 $adresse = $data['logement']['adresse'] ?? '';
                 $codePostal = $data['logement']['code_postal'] ?? null;

@@ -19,17 +19,6 @@ class Cle extends Model
         'photo',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::deleting(function ($cle) {
-            if ($cle->photo) {
-                Storage::disk('public')->delete($cle->photo);
-            }
-        });
-    }
-
     protected function casts(): array
     {
         return [

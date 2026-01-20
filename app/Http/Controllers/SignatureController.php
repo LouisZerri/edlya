@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\SignerBailleurRequest;
+use App\Http\Requests\SignerLocataireRequest;
+use App\Http\Requests\VerifierCodeRequest;
 use App\Mail\CodeSignatureMail;
 use App\Mail\SignatureLocataireMail;
 use App\Models\EtatDesLieux;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
@@ -18,7 +20,7 @@ class SignatureController extends Controller
      */
     public function show(EtatDesLieux $etatDesLieux): View
     {
-        $this->authorizeAccess($etatDesLieux);
+        $this->authorize('view', $etatDesLieux);
 
         return view('etats-des-lieux.signature', compact('etatDesLieux'));
     }
@@ -26,18 +28,12 @@ class SignatureController extends Controller
     /**
      * Étape 1 : Signature du bailleur
      */
-    public function signerBailleur(Request $request, EtatDesLieux $etatDesLieux): RedirectResponse
+    public function signerBailleur(SignerBailleurRequest $request, EtatDesLieux $etatDesLieux): RedirectResponse
     {
-        $this->authorizeAccess($etatDesLieux);
-
-        $request->validate([
-            'signature_bailleur' => ['required', 'string'],
-        ], [
-            'signature_bailleur.required' => 'La signature du bailleur est requise.',
-        ]);
+        $this->authorize('update', $etatDesLieux);
 
         $etatDesLieux->update([
-            'signature_bailleur' => $request->signature_bailleur,
+            'signature_bailleur' => $request->validated('signature_bailleur'),
             'date_signature_bailleur' => now(),
         ]);
 
@@ -51,7 +47,7 @@ class SignatureController extends Controller
      */
     public function envoyerLien(Request $request, EtatDesLieux $etatDesLieux): RedirectResponse
     {
-        $this->authorizeAccess($etatDesLieux);
+        $this->authorize('update', $etatDesLieux);
 
         if (!$etatDesLieux->baileurASigne()) {
             return redirect()
@@ -117,7 +113,7 @@ class SignatureController extends Controller
     /**
      * Vérification du code (depuis page publique)
      */
-    public function verifierCodeLocataire(Request $request, string $token): RedirectResponse
+    public function verifierCodeLocataire(VerifierCodeRequest $request, string $token): RedirectResponse
     {
         $etatDesLieux = EtatDesLieux::where('signature_token', $token)->first();
 
@@ -125,11 +121,7 @@ class SignatureController extends Controller
             abort(404, 'Lien invalide ou expiré.');
         }
 
-        $request->validate([
-            'code' => ['required', 'string', 'size:6'],
-        ]);
-
-        if (!$etatDesLieux->verifierCode($request->code)) {
+        if (!$etatDesLieux->verifierCode($request->validated('code'))) {
             return redirect()
                 ->route('signature.locataire', ['token' => $token])
                 ->with('error', 'Code invalide ou expiré.');
@@ -145,7 +137,7 @@ class SignatureController extends Controller
     /**
      * Signature du locataire (depuis page publique)
      */
-    public function signerLocatairePublic(Request $request, string $token): RedirectResponse
+    public function signerLocatairePublic(SignerLocataireRequest $request, string $token): RedirectResponse
     {
         $etatDesLieux = EtatDesLieux::where('signature_token', $token)->first();
 
@@ -159,12 +151,11 @@ class SignatureController extends Controller
                 ->with('error', 'Veuillez d\'abord valider votre code.');
         }
 
-        $request->validate([
-            'signature_locataire' => ['required', 'string'],
-        ]);
+        // Stocker l'ID en session avant d'invalider le token
+        session(['signed_edl_id' => $etatDesLieux->id]);
 
         $etatDesLieux->update([
-            'signature_locataire' => $request->signature_locataire,
+            'signature_locataire' => $request->validated('signature_locataire'),
             'date_signature_locataire' => now(),
             'signature_ip' => $request->ip(),
             'signature_user_agent' => $request->userAgent(),
@@ -184,20 +175,16 @@ class SignatureController extends Controller
      */
     public function confirmation(string $token): View
     {
-        // Récupérer via l'ID stocké en session ou via une autre méthode
-        $etatDesLieux = EtatDesLieux::where('statut', 'signe')
-            ->whereNotNull('signature_locataire')
-            ->whereNotNull('date_signature_locataire')
-            ->latest('date_signature_locataire')
+        // Récupérer l'EDL via le partage ou via l'ID en session
+        $etatDesLieux = EtatDesLieux::where('signature_token', $token)
+            ->orWhere(function ($query) {
+                // Le token a été invalidé après signature, chercher via session
+                $query->whereNull('signature_token')
+                      ->where('statut', 'signe')
+                      ->where('id', session('signed_edl_id'));
+            })
             ->firstOrFail();
 
         return view('signature.confirmation', compact('etatDesLieux'));
-    }
-
-    private function authorizeAccess(EtatDesLieux $etatDesLieux): void
-    {
-        if ($etatDesLieux->user_id != Auth::id()) {
-            abort(403);
-        }
     }
 }

@@ -2,24 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CleRequest;
 use App\Models\Cle;
 use App\Models\EtatDesLieux;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class CleController extends Controller
 {
-    public function store(Request $request, EtatDesLieux $etatDesLieux): RedirectResponse
+    public function store(CleRequest $request, EtatDesLieux $etatDesLieux): RedirectResponse
     {
         $this->authorize('update', $etatDesLieux);
 
-        $validated = $request->validate([
-            'type' => ['required', 'string', 'max:255'],
-            'nombre' => ['required', 'integer', 'min:1', 'max:99'],
-            'commentaire' => ['nullable', 'string', 'max:500'],
-            'photo' => ['nullable', 'image', 'max:5120'],
-        ]);
+        $validated = $request->validated();
 
         // Gérer l'upload de photo
         if ($request->hasFile('photo')) {
@@ -34,17 +29,11 @@ class CleController extends Controller
             ->with('success', 'Clé ajoutée.');
     }
 
-    public function update(Request $request, Cle $cle): RedirectResponse
+    public function update(CleRequest $request, Cle $cle): RedirectResponse
     {
-        $etatDesLieux = $cle->etatDesLieux;
-        $this->authorize('update', $etatDesLieux);
+        $this->authorize('update', $cle);
 
-        $validated = $request->validate([
-            'type' => ['required', 'string', 'max:255'],
-            'nombre' => ['required', 'integer', 'min:1', 'max:99'],
-            'commentaire' => ['nullable', 'string', 'max:500'],
-            'photo' => ['nullable', 'image', 'max:5120'],
-        ]);
+        $validated = $request->validated();
 
         // Gérer l'upload de photo
         if ($request->hasFile('photo')) {
@@ -58,15 +47,16 @@ class CleController extends Controller
         $cle->update($validated);
 
         return redirect()
-            ->route('etats-des-lieux.edit', $etatDesLieux)
+            ->route('etats-des-lieux.edit', $cle->etatDesLieux)
             ->withFragment('cles')
             ->with('success', 'Clé mise à jour.');
     }
 
     public function destroy(Cle $cle): RedirectResponse
     {
+        $this->authorize('delete', $cle);
+
         $etatDesLieux = $cle->etatDesLieux;
-        $this->authorize('update', $etatDesLieux);
 
         // Supprimer la photo
         if ($cle->photo) {
@@ -83,8 +73,7 @@ class CleController extends Controller
 
     public function deletePhoto(Cle $cle): RedirectResponse
     {
-        $etatDesLieux = $cle->etatDesLieux;
-        $this->authorize('update', $etatDesLieux);
+        $this->authorize('update', $cle);
 
         if ($cle->photo) {
             Storage::disk('public')->delete($cle->photo);
@@ -92,7 +81,7 @@ class CleController extends Controller
         }
 
         return redirect()
-            ->route('etats-des-lieux.edit', $etatDesLieux)
+            ->route('etats-des-lieux.edit', $cle->etatDesLieux)
             ->withFragment('cles')
             ->with('success', 'Photo supprimée.');
     }

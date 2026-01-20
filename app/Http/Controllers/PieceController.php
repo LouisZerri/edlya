@@ -6,13 +6,12 @@ use App\Http\Requests\PieceRequest;
 use App\Models\EtatDesLieux;
 use App\Models\Piece;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
 
 class PieceController extends Controller
 {
     public function store(PieceRequest $request, EtatDesLieux $etatDesLieux): RedirectResponse
     {
-        $this->authorizeAccess($etatDesLieux);
+        $this->authorize('update', $etatDesLieux);
 
         $ordre = $etatDesLieux->pieces()->max('ordre') + 1;
 
@@ -29,7 +28,7 @@ class PieceController extends Controller
 
     public function update(PieceRequest $request, Piece $piece): RedirectResponse
     {
-        $this->authorizeAccessPiece($piece);
+        $this->authorize('update', $piece);
 
         $piece->update($request->validated());
 
@@ -41,7 +40,7 @@ class PieceController extends Controller
 
     public function destroy(Piece $piece): RedirectResponse
     {
-        $this->authorizeAccessPiece($piece);
+        $this->authorize('delete', $piece);
 
         $etatDesLieuxId = $piece->etat_des_lieux_id;
         $piece->delete();
@@ -50,19 +49,5 @@ class PieceController extends Controller
             ->route('etats-des-lieux.edit', $etatDesLieuxId)
             ->withFragment('pieces')
             ->with('success', 'Pièce supprimée.');
-    }
-
-    private function authorizeAccess(EtatDesLieux $etatDesLieux): void
-    {
-        if ($etatDesLieux->user_id != Auth::id()) {
-            abort(403);
-        }
-    }
-
-    private function authorizeAccessPiece(Piece $piece): void
-    {
-        if ($piece->etatDesLieux->user_id != Auth::id()) {
-            abort(403);
-        }
     }
 }

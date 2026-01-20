@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class EtatDesLieux extends Model
@@ -50,36 +49,6 @@ class EtatDesLieux extends Model
             'code_validation_verifie_at' => 'datetime',
             'signature_token_expire_at' => 'datetime',
         ];
-    }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::deleting(function ($etatDesLieux) {
-            // Photos des éléments
-            foreach ($etatDesLieux->pieces as $piece) {
-                foreach ($piece->elements as $element) {
-                    foreach ($element->photos as $photo) {
-                        Storage::disk('public')->delete($photo->chemin);
-                    }
-                }
-            }
-            
-            // Photos des compteurs
-            foreach ($etatDesLieux->compteurs as $compteur) {
-                if ($compteur->photo) {
-                    Storage::disk('public')->delete($compteur->photo);
-                }
-            }
-            
-            // Photos des clés
-            foreach ($etatDesLieux->cles as $cle) {
-                if ($cle->photo) {
-                    Storage::disk('public')->delete($cle->photo);
-                }
-            }
-        });
     }
 
     public function logement(): BelongsTo

@@ -24,19 +24,6 @@ class Compteur extends Model
         'photos' => 'array',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::deleting(function ($compteur) {
-            if ($compteur->photos) {
-                foreach ($compteur->photos as $photo) {
-                    Storage::disk('public')->delete($photo);
-                }
-            }
-        });
-    }
-
     public function etatDesLieux(): BelongsTo
     {
         return $this->belongsTo(EtatDesLieux::class);
