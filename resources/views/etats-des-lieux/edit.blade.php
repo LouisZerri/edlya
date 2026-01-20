@@ -13,30 +13,93 @@
     <h1 class="text-2xl font-semibold text-slate-800 mb-6">Modifier l'état des lieux</h1>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {{-- Colonne gauche : Infos générales --}}
-        <div class="lg:col-span-1">
-            <div class="bg-white p-6 rounded-lg border border-slate-200 sticky top-6">
+        {{-- Colonne gauche : Navigation sticky + Infos générales --}}
+        <div class="lg:col-span-1 space-y-6">
+            {{-- Wrapper sticky pour progression + navigation uniquement --}}
+            @if ($etatDesLieux->pieces->count() > 0)
+                <div class="lg:sticky lg:top-6 space-y-4 z-10">
+                    {{-- Indicateur de progression --}}
+                    <x-progress-indicator :etatDesLieux="$etatDesLieux" />
+
+                    {{-- Navigation rapide --}}
+                    <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                        <p class="text-xs text-slate-500 mb-3 font-medium uppercase tracking-wide">Navigation</p>
+                        <nav class="flex flex-col gap-1 max-h-[35vh] overflow-y-auto" id="pieces-nav">
+                            <a href="#infos-generales" class="nav-link text-sm px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-2">
+                                <span class="text-base">📋</span>
+                                Infos générales
+                            </a>
+                            <a href="#compteurs" class="nav-link text-sm px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-2">
+                                <span class="text-base">⚡</span>
+                                Compteurs
+                                @if($etatDesLieux->compteurs->count() === 4)
+                                    <span class="w-2 h-2 rounded-full bg-green-500 ml-auto"></span>
+                                @elseif($etatDesLieux->compteurs->count() > 0)
+                                    <span class="w-2 h-2 rounded-full bg-amber-500 ml-auto"></span>
+                                @endif
+                            </a>
+                            <a href="#cles" class="nav-link text-sm px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-2">
+                                <span class="text-base">🔑</span>
+                                Clés
+                                @if($etatDesLieux->cles->isNotEmpty())
+                                    <span class="w-2 h-2 rounded-full bg-green-500 ml-auto"></span>
+                                @endif
+                            </a>
+                            <div class="border-t border-slate-200 my-2"></div>
+                            @foreach ($etatDesLieux->pieces as $piece)
+                                @php
+                                    $piecePhotos = $piece->elements->flatMap(fn($e) => $e->photos);
+                                    $hasElements = $piece->elements->isNotEmpty();
+                                    $hasPhotos = $piecePhotos->isNotEmpty();
+                                    $navPieceStatus = match(true) {
+                                        $hasElements && $hasPhotos => 'bg-green-500',
+                                        $hasElements => 'bg-amber-500',
+                                        default => 'bg-slate-300',
+                                    };
+                                @endphp
+                                <a href="#piece-{{ $piece->id }}"
+                                   class="nav-link text-sm px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-2"
+                                   data-piece-nav="{{ $piece->id }}">
+                                    <span class="w-2 h-2 rounded-full {{ $navPieceStatus }}"></span>
+                                    {{ $piece->nom }}
+                                </a>
+                            @endforeach
+                        </nav>
+                    </div>
+                </div>
+            @else
+                {{-- Sans pièces, afficher juste la progression --}}
+                <x-progress-indicator :etatDesLieux="$etatDesLieux" />
+            @endif
+        </div>
+
+        {{-- Colonne centrale : Infos générales --}}
+        <div class="lg:col-span-2 space-y-6">
+            {{-- Formulaire informations générales --}}
+            <div id="infos-generales" class="bg-white p-6 rounded-lg border border-slate-200 scroll-mt-6">
                 <h2 class="font-medium text-slate-800 mb-4">Informations générales</h2>
 
                 <form method="POST" action="{{ route('etats-des-lieux.update', $etatDesLieux) }}">
                     @csrf
                     @method('PUT')
 
-                    <x-form.select name="logement_id" label="Logement" :options="$logements->pluck('nom', 'id')->toArray()" :value="$etatDesLieux->logement_id"
-                        :required="true" />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <x-form.select name="logement_id" label="Logement" :options="$logements->pluck('nom', 'id')->toArray()" :value="$etatDesLieux->logement_id"
+                            :required="true" />
 
-                    <x-form.select name="type" label="Type" :options="['entree' => 'Entrée', 'sortie' => 'Sortie']" :value="$etatDesLieux->type" :required="true" />
+                        <x-form.select name="type" label="Type" :options="['entree' => 'Entrée', 'sortie' => 'Sortie']" :value="$etatDesLieux->type" :required="true" />
 
-                    <x-form.input name="date_realisation" type="date" label="Date" :value="$etatDesLieux->date_realisation->format('Y-m-d')"
-                        :required="true" />
+                        <x-form.input name="date_realisation" type="date" label="Date" :value="$etatDesLieux->date_realisation->format('Y-m-d')"
+                            :required="true" />
 
-                    <x-form.input name="locataire_nom" label="Locataire" :value="$etatDesLieux->locataire_nom" :required="true" />
+                        <x-form.input name="locataire_nom" label="Locataire" :value="$etatDesLieux->locataire_nom" :required="true" />
 
-                    <x-form.input name="locataire_email" type="email" label="Email" :value="$etatDesLieux->locataire_email" />
+                        <x-form.input name="locataire_email" type="email" label="Email" :value="$etatDesLieux->locataire_email" />
 
-                    <x-form.input name="locataire_telephone" type="tel" label="Téléphone" :value="$etatDesLieux->locataire_telephone" />
+                        <x-form.input name="locataire_telephone" type="tel" label="Téléphone" :value="$etatDesLieux->locataire_telephone" />
+                    </div>
 
-                    <div class="mb-4">
+                    <div class="mt-4 mb-4">
                         <label for="observations_generales"
                             class="block text-sm font-medium text-slate-700 mb-1">Observations</label>
                         <textarea name="observations_generales" id="observations_generales" rows="3"
@@ -46,14 +109,18 @@
                     <x-form.button>Enregistrer</x-form.button>
                 </form>
             </div>
-        </div>
 
-        {{-- Colonne droite --}}
-        <div class="lg:col-span-2 space-y-6">
-
-            {{-- Section Compteurs --}}
-            <div id="compteurs" class="bg-white p-6 rounded-lg border border-slate-200 scroll-mt-6">
-                <div class="flex items-center justify-between mb-6">
+            {{-- Section Compteurs (Collapsible) --}}
+            @php
+                $compteursComplete = $etatDesLieux->compteurs->count() === 4;
+                $compteursEnCours = $etatDesLieux->compteurs->count() > 0 && !$compteursComplete;
+            @endphp
+            <div id="compteurs" class="bg-white rounded-lg border border-slate-200 scroll-mt-6">
+                {{-- En-tête cliquable --}}
+                <button type="button"
+                        data-accordion-toggle="compteurs-content"
+                        class="w-full px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-t-lg"
+                        aria-expanded="true">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -61,161 +128,181 @@
                                     d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                         </div>
-                        <div>
-                            <h2 class="font-medium text-slate-800 flex items-center">
+                        <div class="text-left">
+                            <h2 class="font-medium text-slate-800 flex items-center gap-2">
                                 Relevé des compteurs
-                                <x-aide-tooltip
-                                    texte="Relevez l'index de chaque compteur et prenez une photo comme preuve. Les index permettront de calculer la consommation entre l'entrée et la sortie." />
+                                @if($compteursComplete)
+                                    <span class="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Complet</span>
+                                @elseif($compteursEnCours)
+                                    <span class="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">En cours</span>
+                                @endif
                             </h2>
-                            <p class="text-sm text-slate-500">{{ $etatDesLieux->compteurs->count() }} compteur(s)
-                                renseigné(s)</p>
+                            <p class="text-sm text-slate-500">{{ $etatDesLieux->compteurs->count() }}/4 compteur(s) renseigné(s)</p>
                         </div>
                     </div>
-                </div>
+                    <svg data-accordion-icon class="w-5 h-5 text-slate-400 transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
 
-                @php
-                    $typesCompteurs = [
-                        'electricite' => ['label' => 'Électricité', 'icon' => '⚡'],
-                        'eau_froide' => ['label' => 'Eau froide', 'icon' => '💧'],
-                        'eau_chaude' => ['label' => 'Eau chaude', 'icon' => '🔥'],
-                        'gaz' => ['label' => 'Gaz', 'icon' => '🔵'],
-                    ];
-                @endphp
+                {{-- Contenu repliable --}}
+                <div id="compteurs-content" class="px-6 pb-6">
+                    <div class="mb-4">
+                        <x-aide-tooltip
+                            texte="Relevez l'index de chaque compteur et prenez une photo comme preuve. Les index permettront de calculer la consommation entre l'entrée et la sortie." />
+                    </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    @foreach ($typesCompteurs as $type => $config)
-                        @php
-                            $compteur = $etatDesLieux->compteurs->where('type', $type)->first();
-                        @endphp
+                    @php
+                        $typesCompteurs = [
+                            'electricite' => ['label' => 'Électricité', 'icon' => '⚡'],
+                            'eau_froide' => ['label' => 'Eau froide', 'icon' => '💧'],
+                            'eau_chaude' => ['label' => 'Eau chaude', 'icon' => '🔥'],
+                            'gaz' => ['label' => 'Gaz', 'icon' => '🔵'],
+                        ];
+                    @endphp
 
-                        <div class="border border-slate-200 rounded-lg p-4 bg-slate-50">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-lg">{{ $config['icon'] }}</span>
-                                    <span class="font-medium text-slate-800">{{ $config['label'] }}</span>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @foreach ($typesCompteurs as $type => $config)
+                            @php
+                                $compteur = $etatDesLieux->compteurs->where('type', $type)->first();
+                            @endphp
+
+                            <div class="border border-slate-200 rounded-lg p-4 bg-slate-50">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-lg">{{ $config['icon'] }}</span>
+                                        <span class="font-medium text-slate-800">{{ $config['label'] }}</span>
+                                    </div>
+                                    @if ($compteur)
+                                        <span
+                                            class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">Renseigné</span>
+                                    @endif
                                 </div>
+
+                                <form method="POST"
+                                    action="{{ $compteur ? route('compteurs.update', $compteur) : route('compteurs.store', $etatDesLieux) }}"
+                                    enctype="multipart/form-data">
+                                    @csrf
+                                    @if ($compteur)
+                                        @method('PUT')
+                                    @else
+                                        <input type="hidden" name="type" value="{{ $type }}">
+                                    @endif
+
+                                    <div class="space-y-3">
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="block text-xs text-slate-500 mb-1">N° compteur</label>
+                                                <input type="text" name="numero" value="{{ $compteur?->numero }}"
+                                                    placeholder="Ex: 12345678"
+                                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs text-slate-500 mb-1 flex items-center">
+                                                    Index / Relevé
+                                                    <x-aide-tooltip
+                                                        texte="Notez tous les chiffres affichés sur le compteur. Pour l'électricité, notez HP et HC séparément si applicable."
+                                                        position="bottom" />
+                                                </label>
+                                                <input type="text" name="index" value="{{ $compteur?->index }}"
+                                                    placeholder="Ex: 45678"
+                                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs text-slate-500 mb-1">Commentaire</label>
+                                            <input type="text" name="commentaire" value="{{ $compteur?->commentaire }}"
+                                                placeholder="Optionnel"
+                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
+                                        </div>
+
+                                        {{-- Photos du compteur --}}
+                                        <div>
+                                            <label class="block text-xs text-slate-500 mb-1">Photo(s) du compteur</label>
+                                            @if ($compteur?->photos && count($compteur->photos) > 0)
+                                                <div class="flex flex-wrap gap-2 mb-2">
+                                                    @foreach ($compteur->photos_urls as $index => $photoUrl)
+                                                        <div class="relative group">
+                                                            <a href="{{ $photoUrl }}" target="_blank" class="block">
+                                                                <img src="{{ $photoUrl }}"
+                                                                    alt="Compteur {{ $config['label'] }} - Photo {{ $index + 1 }}"
+                                                                    class="w-16 h-16 object-cover rounded-lg border border-slate-200">
+                                                            </a>
+                                                            <button type="button"
+                                                                class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 text-xs cursor-pointer flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                onclick="if(confirm('Supprimer cette photo ?')) { document.getElementById('delete-photo-{{ $type }}-{{ $index }}').submit(); }"
+                                                                title="Supprimer">
+                                                                ×
+                                                            </button>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                            <label class="cursor-pointer block">
+                                                <div
+                                                    class="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 border-dashed rounded-lg hover:bg-slate-50 transition-colors">
+                                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                                    </svg>
+                                                    <span class="text-xs text-slate-600 compteur-file-label"
+                                                        data-type="{{ $type }}">Ajouter une photo</span>
+                                                </div>
+                                                <input type="file" name="photo" accept="image/*"
+                                                    class="hidden compteur-file-input" data-type="{{ $type }}">
+                                            </label>
+                                        </div>
+
+                                        <button type="submit"
+                                            class="w-full bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-300 transition-colors cursor-pointer">
+                                            {{ $compteur ? 'Mettre à jour' : 'Enregistrer' }}
+                                        </button>
+                                    </div>
+                                </form>
+
                                 @if ($compteur)
-                                    <span
-                                        class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">Renseigné</span>
+                                    {{-- Formulaires pour supprimer chaque photo individuellement --}}
+                                    @if ($compteur->photos)
+                                        @foreach ($compteur->photos as $index => $photo)
+                                            <form method="POST"
+                                                action="{{ route('compteurs.delete-photo', ['compteur' => $compteur, 'index' => $index]) }}"
+                                                id="delete-photo-{{ $type }}-{{ $index }}" class="hidden">
+                                                @csrf
+                                                @method('DELETE')
+                                            </form>
+                                        @endforeach
+                                    @endif
+
+                                    {{-- Formulaire pour supprimer le compteur --}}
+                                    <form method="POST" action="{{ route('compteurs.destroy', $compteur) }}"
+                                        class="mt-2">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                            class="w-full text-xs text-red-600 hover:text-red-700 py-1 cursor-pointer"
+                                            onclick="return confirm('Supprimer ce compteur ?')">
+                                            Supprimer ce compteur
+                                        </button>
+                                    </form>
                                 @endif
                             </div>
-
-                            <form method="POST"
-                                action="{{ $compteur ? route('compteurs.update', $compteur) : route('compteurs.store', $etatDesLieux) }}"
-                                enctype="multipart/form-data">
-                                @csrf
-                                @if ($compteur)
-                                    @method('PUT')
-                                @else
-                                    <input type="hidden" name="type" value="{{ $type }}">
-                                @endif
-
-                                <div class="space-y-3">
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label class="block text-xs text-slate-500 mb-1">N° compteur</label>
-                                            <input type="text" name="numero" value="{{ $compteur?->numero }}"
-                                                placeholder="Ex: 12345678"
-                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs text-slate-500 mb-1 flex items-center">
-                                                Index / Relevé
-                                                <x-aide-tooltip
-                                                    texte="Notez tous les chiffres affichés sur le compteur. Pour l'électricité, notez HP et HC séparément si applicable."
-                                                    position="bottom" />
-                                            </label>
-                                            <input type="text" name="index" value="{{ $compteur?->index }}"
-                                                placeholder="Ex: 45678"
-                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-xs text-slate-500 mb-1">Commentaire</label>
-                                        <input type="text" name="commentaire" value="{{ $compteur?->commentaire }}"
-                                            placeholder="Optionnel"
-                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
-                                    </div>
-
-                                    {{-- Photos du compteur --}}
-                                    <div>
-                                        <label class="block text-xs text-slate-500 mb-1">Photo(s) du compteur</label>
-                                        @if ($compteur?->photos && count($compteur->photos) > 0)
-                                            <div class="flex flex-wrap gap-2 mb-2">
-                                                @foreach ($compteur->photos_urls as $index => $photoUrl)
-                                                    <div class="relative group">
-                                                        <a href="{{ $photoUrl }}" target="_blank" class="block">
-                                                            <img src="{{ $photoUrl }}"
-                                                                alt="Compteur {{ $config['label'] }} - Photo {{ $index + 1 }}"
-                                                                class="w-16 h-16 object-cover rounded-lg border border-slate-200">
-                                                        </a>
-                                                        <button type="button"
-                                                            class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 text-xs cursor-pointer flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-                                                            onclick="if(confirm('Supprimer cette photo ?')) { document.getElementById('delete-photo-{{ $type }}-{{ $index }}').submit(); }"
-                                                            title="Supprimer">
-                                                            ×
-                                                        </button>
-                                                    </div>
-                                                @endforeach
-                                            </div>
-                                        @endif
-                                        <label class="cursor-pointer block">
-                                            <div
-                                                class="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 border-dashed rounded-lg hover:bg-slate-50 transition-colors">
-                                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                                </svg>
-                                                <span class="text-xs text-slate-600 compteur-file-label"
-                                                    data-type="{{ $type }}">Ajouter une photo</span>
-                                            </div>
-                                            <input type="file" name="photo" accept="image/*"
-                                                class="hidden compteur-file-input" data-type="{{ $type }}">
-                                        </label>
-                                    </div>
-
-                                    <button type="submit"
-                                        class="w-full bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-300 transition-colors cursor-pointer">
-                                        {{ $compteur ? 'Mettre à jour' : 'Enregistrer' }}
-                                    </button>
-                                </div>
-                            </form>
-
-                            @if ($compteur)
-                                {{-- Formulaires pour supprimer chaque photo individuellement --}}
-                                @if ($compteur->photos)
-                                    @foreach ($compteur->photos as $index => $photo)
-                                        <form method="POST"
-                                            action="{{ route('compteurs.delete-photo', ['compteur' => $compteur, 'index' => $index]) }}"
-                                            id="delete-photo-{{ $type }}-{{ $index }}" class="hidden">
-                                            @csrf
-                                            @method('DELETE')
-                                        </form>
-                                    @endforeach
-                                @endif
-
-                                {{-- Formulaire pour supprimer le compteur --}}
-                                <form method="POST" action="{{ route('compteurs.destroy', $compteur) }}"
-                                    class="mt-2">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                        class="w-full text-xs text-red-600 hover:text-red-700 py-1 cursor-pointer"
-                                        onclick="return confirm('Supprimer ce compteur ?')">
-                                        Supprimer ce compteur
-                                    </button>
-                                </form>
-                            @endif
-                        </div>
-                    @endforeach
+                        @endforeach
+                    </div>
                 </div>
             </div>
 
-            {{-- Section Clés --}}
-            <div id="cles" class="bg-white p-6 rounded-lg border border-slate-200 scroll-mt-6">
-                <div class="flex items-center justify-between mb-6">
+            {{-- Section Clés (Collapsible) --}}
+            @php
+                $clesComplete = $etatDesLieux->cles->isNotEmpty();
+            @endphp
+            <div id="cles" class="bg-white rounded-lg border border-slate-200 scroll-mt-6">
+                {{-- En-tête cliquable --}}
+                <button type="button"
+                        data-accordion-toggle="cles-content"
+                        class="w-full px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors rounded-t-lg"
+                        aria-expanded="true">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
                             <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor"
@@ -224,183 +311,195 @@
                                     d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                             </svg>
                         </div>
-                        <div>
-                            <h2 class="font-medium text-slate-800 flex items-center">
+                        <div class="text-left">
+                            <h2 class="font-medium text-slate-800 flex items-center gap-2">
                                 Remise des clés
-                                <x-aide-tooltip
-                                    texte="Listez toutes les clés remises avec leur quantité. En cas de perte, le locataire devra rembourser le remplacement des clés et éventuellement de la serrure." />
+                                @if($clesComplete)
+                                    <span class="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Complet</span>
+                                @endif
                             </h2>
                             <p class="text-sm text-slate-500">{{ $etatDesLieux->cles->sum('nombre') }} clé(s) au total</p>
                         </div>
                     </div>
-                </div>
+                    <svg data-accordion-icon class="w-5 h-5 text-slate-400 transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
 
-                {{-- Liste des clés existantes --}}
-                @if ($etatDesLieux->cles->isNotEmpty())
-                    <div class="space-y-4 mb-6">
-                        @foreach ($etatDesLieux->cles as $cle)
-                            <div class="p-4 bg-slate-50 rounded-lg">
-                                <form method="POST" action="{{ route('cles.update', $cle) }}"
-                                    enctype="multipart/form-data">
-                                    @csrf
-                                    @method('PUT')
+                {{-- Contenu repliable --}}
+                <div id="cles-content" class="px-6 pb-6">
+                    <div class="mb-4">
+                        <x-aide-tooltip
+                            texte="Listez toutes les clés remises avec leur quantité. En cas de perte, le locataire devra rembourser le remplacement des clés et éventuellement de la serrure." />
+                    </div>
 
-                                    <div class="flex items-start gap-4">
-                                        {{-- Photo --}}
-                                        <div class="flex-shrink-0">
-                                            @if ($cle->photo)
-                                                <div class="relative">
-                                                    <a href="{{ $cle->photo_url }}" target="_blank">
-                                                        <img src="{{ $cle->photo_url }}" alt="Photo clé"
-                                                            class="w-20 h-20 object-cover rounded-lg border border-slate-200">
-                                                    </a>
-                                                    <button type="button"
-                                                        class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 text-xs cursor-pointer flex items-center justify-center shadow-md"
-                                                        onclick="if(confirm('Supprimer cette photo ?')) { document.getElementById('delete-photo-cle-{{ $cle->id }}').submit(); }">
-                                                        ×
-                                                    </button>
-                                                </div>
-                                            @else
-                                                <label class="cursor-pointer block">
-                                                    <div
-                                                        class="w-20 h-20 bg-white border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center hover:border-amber-400 hover:bg-amber-50 transition-colors">
-                                                        <svg class="w-6 h-6 text-slate-400" fill="none"
-                                                            stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                                        </svg>
-                                                        <span class="text-xs text-slate-400 mt-1">Photo</span>
+                    {{-- Liste des clés existantes --}}
+                    @if ($etatDesLieux->cles->isNotEmpty())
+                        <div class="space-y-4 mb-6">
+                            @foreach ($etatDesLieux->cles as $cle)
+                                <div class="p-4 bg-slate-50 rounded-lg">
+                                    <form method="POST" action="{{ route('cles.update', $cle) }}"
+                                        enctype="multipart/form-data">
+                                        @csrf
+                                        @method('PUT')
+
+                                        <div class="flex items-start gap-4">
+                                            {{-- Photo --}}
+                                            <div class="flex-shrink-0">
+                                                @if ($cle->photo)
+                                                    <div class="relative">
+                                                        <a href="{{ $cle->photo_url }}" target="_blank">
+                                                            <img src="{{ $cle->photo_url }}" alt="Photo clé"
+                                                                class="w-20 h-20 object-cover rounded-lg border border-slate-200">
+                                                        </a>
+                                                        <button type="button"
+                                                            class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 text-xs cursor-pointer flex items-center justify-center shadow-md"
+                                                            onclick="if(confirm('Supprimer cette photo ?')) { document.getElementById('delete-photo-cle-{{ $cle->id }}').submit(); }">
+                                                            ×
+                                                        </button>
                                                     </div>
-                                                    <input type="file" name="photo" accept="image/*"
-                                                        class="hidden cle-file-input" data-id="{{ $cle->id }}">
-                                                </label>
-                                            @endif
-                                        </div>
-
-                                        {{-- Champs --}}
-                                        <div class="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3">
-                                            <div class="sm:col-span-1">
-                                                <label class="block text-xs text-slate-500 mb-1">Type</label>
-                                                <input type="text" name="type" value="{{ $cle->type }}"
-                                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white"
-                                                    placeholder="Type de clé" required>
+                                                @else
+                                                    <label class="cursor-pointer block">
+                                                        <div
+                                                            class="w-20 h-20 bg-white border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center hover:border-amber-400 hover:bg-amber-50 transition-colors">
+                                                            <svg class="w-6 h-6 text-slate-400" fill="none"
+                                                                stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                                            </svg>
+                                                            <span class="text-xs text-slate-400 mt-1">Photo</span>
+                                                        </div>
+                                                        <input type="file" name="photo" accept="image/*"
+                                                            class="hidden cle-file-input" data-id="{{ $cle->id }}">
+                                                    </label>
+                                                @endif
                                             </div>
 
-                                            <div class="sm:col-span-1">
-                                                <label class="block text-xs text-slate-500 mb-1">Nombre</label>
-                                                <input type="number" name="nombre" value="{{ $cle->nombre }}"
-                                                    min="1" max="99"
-                                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white text-center"
-                                                    required>
+                                            {{-- Champs --}}
+                                            <div class="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                                <div class="sm:col-span-1">
+                                                    <label class="block text-xs text-slate-500 mb-1">Type</label>
+                                                    <input type="text" name="type" value="{{ $cle->type }}"
+                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white"
+                                                        placeholder="Type de clé" required>
+                                                </div>
+
+                                                <div class="sm:col-span-1">
+                                                    <label class="block text-xs text-slate-500 mb-1">Nombre</label>
+                                                    <input type="number" name="nombre" value="{{ $cle->nombre }}"
+                                                        min="1" max="99"
+                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white text-center"
+                                                        required>
+                                                </div>
+
+                                                <div class="sm:col-span-2">
+                                                    <label class="block text-xs text-slate-500 mb-1">Commentaire</label>
+                                                    <input type="text" name="commentaire" value="{{ $cle->commentaire }}"
+                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white"
+                                                        placeholder="Optionnel">
+                                                </div>
                                             </div>
 
-                                            <div class="sm:col-span-2">
-                                                <label class="block text-xs text-slate-500 mb-1">Commentaire</label>
-                                                <input type="text" name="commentaire" value="{{ $cle->commentaire }}"
-                                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white"
-                                                    placeholder="Optionnel">
+                                            {{-- Actions --}}
+                                            <div class="flex flex-col gap-2">
+                                                <button type="submit"
+                                                    class="p-2 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors cursor-pointer"
+                                                    title="Sauvegarder">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </button>
                                             </div>
                                         </div>
+                                    </form>
 
-                                        {{-- Actions --}}
-                                        <div class="flex flex-col gap-2">
-                                            <button type="submit"
-                                                class="p-2 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors cursor-pointer"
-                                                title="Sauvegarder">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-
-                                {{-- Formulaires séparés pour supprimer --}}
-                                <form method="POST" action="{{ route('cles.delete-photo', $cle) }}"
-                                    id="delete-photo-cle-{{ $cle->id }}" class="hidden">
-                                    @csrf
-                                    @method('DELETE')
-                                </form>
-
-                                <div class="mt-3 pt-3 border-t border-slate-200 flex justify-end">
-                                    <form method="POST" action="{{ route('cles.destroy', $cle) }}"
-                                        onsubmit="return confirm('Supprimer cette clé ?')">
+                                    {{-- Formulaires séparés pour supprimer --}}
+                                    <form method="POST" action="{{ route('cles.delete-photo', $cle) }}"
+                                        id="delete-photo-cle-{{ $cle->id }}" class="hidden">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit"
-                                            class="text-xs text-red-500 hover:text-red-700 cursor-pointer">
-                                            Supprimer cette clé
-                                        </button>
                                     </form>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
 
-                {{-- Formulaire ajout clé --}}
-                <div class="bg-slate-50 rounded-lg p-4">
-                    <p class="text-sm font-medium text-slate-700 mb-3">Ajouter une clé</p>
-                    <form method="POST" action="{{ route('cles.store', $etatDesLieux) }}"
-                        enctype="multipart/form-data">
-                        @csrf
-                        <div class="flex items-start gap-4">
-                            {{-- Photo --}}
-                            <div class="flex-shrink-0">
-                                <label class="cursor-pointer block">
-                                    <div class="w-20 h-20 bg-white border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center hover:border-amber-400 hover:bg-amber-50 transition-colors"
-                                        id="new-cle-photo-preview">
-                                        <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                        </svg>
-                                        <span class="text-xs text-slate-400 mt-1">Photo</span>
+                                    <div class="mt-3 pt-3 border-t border-slate-200 flex justify-end">
+                                        <form method="POST" action="{{ route('cles.destroy', $cle) }}"
+                                            onsubmit="return confirm('Supprimer cette clé ?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                class="text-xs text-red-500 hover:text-red-700 cursor-pointer">
+                                                Supprimer cette clé
+                                            </button>
+                                        </form>
                                     </div>
-                                    <input type="file" name="photo" accept="image/*" class="hidden"
-                                        id="new-cle-photo-input">
-                                </label>
-                            </div>
-
-                            {{-- Champs --}}
-                            <div class="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3">
-                                <div class="sm:col-span-1">
-                                    <label class="block text-xs text-slate-500 mb-1">Type</label>
-                                    <select name="type" required
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
-                                        <option value="">Choisir...</option>
-                                        @foreach (\App\Models\Cle::getTypesCommuns() as $typeCommun)
-                                            <option value="{{ $typeCommun }}">{{ $typeCommun }}</option>
-                                        @endforeach
-                                    </select>
                                 </div>
-
-                                <div class="sm:col-span-1">
-                                    <label class="block text-xs text-slate-500 mb-1">Nombre</label>
-                                    <input type="number" name="nombre" value="1" min="1" max="99"
-                                        required
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white text-center">
-                                </div>
-
-                                <div class="sm:col-span-2">
-                                    <label class="block text-xs text-slate-500 mb-1">Commentaire</label>
-                                    <input type="text" name="commentaire" placeholder="Optionnel"
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
-                                </div>
-                            </div>
-
-                            {{-- Bouton --}}
-                            <div class="flex-shrink-0">
-                                <button type="submit"
-                                    class="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors cursor-pointer mt-5">
-                                    Ajouter
-                                </button>
-                            </div>
+                            @endforeach
                         </div>
-                    </form>
+                    @endif
+
+                    {{-- Formulaire ajout clé --}}
+                    <div class="bg-slate-50 rounded-lg p-4">
+                        <p class="text-sm font-medium text-slate-700 mb-3">Ajouter une clé</p>
+                        <form method="POST" action="{{ route('cles.store', $etatDesLieux) }}"
+                            enctype="multipart/form-data">
+                            @csrf
+                            <div class="flex items-start gap-4">
+                                {{-- Photo --}}
+                                <div class="flex-shrink-0">
+                                    <label class="cursor-pointer block">
+                                        <div class="w-20 h-20 bg-white border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center hover:border-amber-400 hover:bg-amber-50 transition-colors"
+                                            id="new-cle-photo-preview">
+                                            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                            </svg>
+                                            <span class="text-xs text-slate-400 mt-1">Photo</span>
+                                        </div>
+                                        <input type="file" name="photo" accept="image/*" class="hidden"
+                                            id="new-cle-photo-input">
+                                    </label>
+                                </div>
+
+                                {{-- Champs --}}
+                                <div class="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                    <div class="sm:col-span-1">
+                                        <label class="block text-xs text-slate-500 mb-1">Type</label>
+                                        <select name="type" required
+                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
+                                            <option value="">Choisir...</option>
+                                            @foreach (\App\Models\Cle::getTypesCommuns() as $typeCommun)
+                                                <option value="{{ $typeCommun }}">{{ $typeCommun }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <div class="sm:col-span-1">
+                                        <label class="block text-xs text-slate-500 mb-1">Nombre</label>
+                                        <input type="number" name="nombre" value="1" min="1" max="99"
+                                            required
+                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white text-center">
+                                    </div>
+
+                                    <div class="sm:col-span-2">
+                                        <label class="block text-xs text-slate-500 mb-1">Commentaire</label>
+                                        <input type="text" name="commentaire" placeholder="Optionnel"
+                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
+                                    </div>
+                                </div>
+
+                                {{-- Bouton --}}
+                                <div class="flex-shrink-0">
+                                    <button type="submit"
+                                        class="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors cursor-pointer mt-5">
+                                        Ajouter
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
 
@@ -461,61 +560,68 @@
                             </div>
                         </div>
                     </div>
-                @else
-                    {{-- Sommaire des pièces --}}
-                    @if ($etatDesLieux->pieces->count() > 2)
-                        <div class="mb-6 p-4 bg-slate-50 rounded-lg">
-                            <p class="text-xs text-slate-500 mb-2">Accès rapide :</p>
-                            <div class="flex flex-wrap gap-2">
-                                @foreach ($etatDesLieux->pieces as $piece)
-                                    <a href="#piece-{{ $piece->id }}"
-                                        class="text-sm px-3 py-1 bg-white border border-slate-200 rounded-full hover:border-primary-300 hover:text-primary-600 transition-colors">
-                                        {{ $piece->nom }}
-                                    </a>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
                 @endif
 
-                {{-- Liste des pièces --}}
-                @forelse ($etatDesLieux->pieces as $piece)
+                {{-- Liste des pièces avec accordéons --}}
+                @forelse ($etatDesLieux->pieces as $index => $piece)
                     @php
                         $allPhotos = $piece->elements->flatMap(fn($e) => $e->photos)->sortBy('id')->values();
+                        $hasElements = $piece->elements->isNotEmpty();
+                        $hasPhotos = $allPhotos->isNotEmpty();
+                        $pieceStatus = match(true) {
+                            $hasElements && $hasPhotos => 'bg-green-500',
+                            $hasElements => 'bg-amber-500',
+                            default => 'bg-slate-300',
+                        };
                     @endphp
 
                     <div id="piece-{{ $piece->id }}" class="border border-slate-200 rounded-lg mb-6 scroll-mt-6">
-                        {{-- En-tête de la pièce --}}
-                        <div class="px-5 py-4 bg-slate-50 rounded-t-lg flex items-center justify-between">
-                            <div>
-                                <h3 class="font-semibold text-slate-800">{{ $piece->nom }}</h3>
-                                <p class="text-sm text-slate-500">{{ $piece->elements->count() }} élément(s) ·
-                                    {{ $allPhotos->count() }} photo(s)</p>
+                        {{-- En-tête cliquable --}}
+                        <button type="button"
+                                data-accordion-toggle="piece-content-{{ $piece->id }}"
+                                class="w-full px-5 py-4 bg-slate-50 rounded-t-lg flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors"
+                                aria-expanded="true">
+                            <div class="flex items-center gap-3">
+                                <span class="w-2.5 h-2.5 rounded-full {{ $pieceStatus }}"></span>
+                                <div class="text-left">
+                                    <h3 class="font-semibold text-slate-800">{{ $piece->nom }}</h3>
+                                    <p class="text-sm text-slate-500">{{ $piece->elements->count() }} élément(s) ·
+                                        {{ $allPhotos->count() }} photo(s)</p>
+                                </div>
                             </div>
-                            <div class="flex items-center space-x-3">
-                                <button type="button" data-analyse-piece="{{ $piece->id }}"
-                                    data-analyse-piece-name="{{ $piece->nom }}"
-                                    class="text-sm text-primary-600 hover:text-primary-700 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors border border-primary-200">
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm text-primary-600 hover:text-primary-700 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors border border-primary-200"
+                                      data-analyse-piece="{{ $piece->id }}"
+                                      data-analyse-piece-name="{{ $piece->nom }}"
+                                      onclick="event.stopPropagation();">
                                     Analyse IA
-                                </button>
+                                </span>
+                                <svg data-accordion-icon class="w-5 h-5 text-slate-400 transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </button>
+
+                        {{-- Contenu repliable --}}
+                        <div id="piece-content-{{ $piece->id }}" class="p-5">
+                            {{-- Bouton supprimer pièce --}}
+                            <div class="flex justify-end mb-4">
                                 <form method="POST" action="{{ route('pieces.destroy', $piece) }}"
                                     onsubmit="return confirm('Supprimer cette pièce et tous ses éléments ?')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit"
-                                        class="text-red-500 hover:text-red-700 cursor-pointer p-2 rounded-lg hover:bg-red-50 transition-colors"
+                                        class="text-red-500 hover:text-red-700 cursor-pointer p-2 rounded-lg hover:bg-red-50 transition-colors text-sm flex items-center gap-1"
                                         title="Supprimer la pièce">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
+                                        Supprimer la pièce
                                     </button>
                                 </form>
                             </div>
-                        </div>
 
-                        {{-- Contenu de la pièce --}}
-                        <div class="p-5">
                             {{-- Éléments existants --}}
                             @if ($piece->elements->isNotEmpty())
                                 <div class="space-y-4 mb-6">
@@ -540,7 +646,9 @@
                                             </div>
 
                                             <form method="POST" action="{{ route('elements.update', $element) }}"
-                                                class="space-y-4">
+                                                class="space-y-4"
+                                                data-auto-save
+                                                id="element-form-{{ $element->id }}">
                                                 @csrf
                                                 @method('PUT')
 
@@ -698,12 +806,11 @@
                                                                 </svg>
                                                             </button>
                                                         </div>
-                                                        <button type="submit"
-                                                            class="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-200 transition-colors cursor-pointer">
-                                                            Sauvegarder
-                                                        </button>
                                                     </div>
                                                 </div>
+
+                                                {{-- Indicateur de sauvegarde auto --}}
+                                                <div class="save-indicator text-xs text-right"></div>
 
                                                 {{-- Photos associées à cet élément --}}
                                                 @if ($element->photos->isNotEmpty())

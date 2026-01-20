@@ -39,3 +39,5 @@ import './features/compteur';
 import './features/degradations';
 import './features/suggestions-observations';
 import './features/assistant-redaction';
+import './features/edit-navigation';
+import './features/auto-save';

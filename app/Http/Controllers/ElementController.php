@@ -6,6 +6,8 @@ use App\Http\Requests\ElementRequest;
 use App\Models\Element;
 use App\Models\Piece;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ElementController extends Controller
 {
@@ -21,7 +23,7 @@ class ElementController extends Controller
             ->with('success', 'Élément ajouté.');
     }
 
-    public function update(ElementRequest $request, Element $element): RedirectResponse
+    public function update(ElementRequest $request, Element $element): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $element);
 
@@ -33,6 +35,15 @@ class ElementController extends Controller
         }
 
         $element->update($validated);
+
+        // Réponse AJAX
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Élément mis à jour.',
+                'element' => $element->fresh(),
+            ]);
+        }
 
         return redirect()
             ->route('etats-des-lieux.edit', $element->piece->etat_des_lieux_id)
