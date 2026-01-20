@@ -292,6 +292,7 @@
             width: 48%;
             vertical-align: top;
             padding-right: 2%;
+            text-align: center;
         }
 
         .photo-cell:last-child {
@@ -324,9 +325,8 @@
         }
 
         .photo-cell img {
-            width: 100%;
+            max-width: 100%;
             max-height: 180px;
-            object-fit: contain;
             border: 1px solid #ddd;
         }
 
