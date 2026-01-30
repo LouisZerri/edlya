@@ -7,7 +7,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-slate-50 min-h-screen">
-    <div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {{-- Header --}}
         <div class="text-center mb-8">
             <h1 class="text-3xl font-bold text-primary-600 mb-2">Edlya</h1>
@@ -27,7 +27,7 @@
             <p class="text-slate-600">{{ $etatDesLieux->logement->adresse }}</p>
             <p class="text-slate-600">{{ $etatDesLieux->logement->code_postal }} {{ $etatDesLieux->logement->ville }}</p>
 
-            <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200">
                 <div>
                     <p class="text-sm text-slate-500">Bailleur</p>
                     <p class="font-medium text-slate-800">{{ $etatDesLieux->user->name }}</p>
@@ -87,7 +87,7 @@
 
                     <form method="POST" action="{{ route('signature.locataire.envoyer-code', ['token' => $token]) }}" class="mb-6">
                         @csrf
-                        <button type="submit" class="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 font-medium cursor-pointer transition-colors">
+                        <button type="submit" class="w-full sm:w-auto bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 font-medium cursor-pointer transition-colors min-h-[48px]">
                             Recevoir le code par email
                         </button>
                     </form>
@@ -97,11 +97,11 @@
                             <p class="text-sm font-medium text-slate-700 mb-3">Entrez le code reçu :</p>
                             <form method="POST" action="{{ route('signature.locataire.verifier-code', ['token' => $token]) }}">
                                 @csrf
-                                <div class="flex justify-center gap-3">
+                                <div class="flex flex-col sm:flex-row justify-center gap-3">
                                     <input type="text" name="code" maxlength="6" placeholder="000000"
-                                        class="w-40 px-4 py-3 border border-slate-300 rounded-lg text-center text-2xl font-mono tracking-widest focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none"
+                                        class="w-full sm:w-40 px-4 py-3 border border-slate-300 rounded-lg text-center text-2xl font-mono tracking-widest focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none"
                                         pattern="[0-9]{6}" required>
-                                    <button type="submit" class="bg-slate-800 text-white px-6 py-3 rounded-lg hover:bg-slate-900 font-medium cursor-pointer transition-colors">
+                                    <button type="submit" class="bg-slate-800 text-white px-6 py-3 rounded-lg hover:bg-slate-900 font-medium cursor-pointer transition-colors min-h-[48px]">
                                         Valider
                                     </button>
                                 </div>
@@ -142,7 +142,7 @@
                         </p>
                     </div>
 
-                    <button type="submit" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 font-medium cursor-pointer transition-colors">
+                    <button type="submit" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 font-medium cursor-pointer transition-colors min-h-[48px]">
                         Signer l'état des lieux
                     </button>
                 </form>

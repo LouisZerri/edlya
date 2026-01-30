@@ -10,18 +10,18 @@
     </div>
 
     <div class="max-w-2xl mx-auto">
-        <div class="flex items-start justify-between mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
             <div>
                 <h1 class="text-2xl font-semibold text-slate-800">{{ $logement->nom }}</h1>
                 <p class="text-slate-500">{{ $logement->adresse_complete }}</p>
             </div>
-            <span class="text-sm bg-slate-100 text-slate-600 px-3 py-1 rounded">{{ ucfirst(str_replace('_', ' ', $logement->type)) }}</span>
+            <span class="text-sm bg-slate-100 text-slate-600 px-3 py-1 rounded self-start">{{ ucfirst(str_replace('_', ' ', $logement->type)) }}</span>
         </div>
 
         <div class="bg-white p-6 rounded-lg border border-slate-200 mb-6">
             <h2 class="font-medium text-slate-800 mb-4">Informations</h2>
             
-            <dl class="grid grid-cols-2 gap-4 text-sm">
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                     <dt class="text-slate-500">Surface</dt>
                     <dd class="text-slate-800">{{ $logement->surface ? $logement->surface . ' m²' : '-' }}</dd>
@@ -40,14 +40,14 @@
             @endif
         </div>
 
-        <div class="flex items-center space-x-4">
-            <a href="{{ route('logements.edit', $logement) }}" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <a href="{{ route('logements.edit', $logement) }}" class="inline-flex items-center justify-center bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors min-h-[44px]">
                 Modifier
             </a>
             <form method="POST" action="{{ route('logements.destroy', $logement) }}" onsubmit="return confirm('Supprimer ce logement ?')">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="text-red-600 hover:text-red-700 transition-colors cursor-pointer">
+                <button type="submit" class="text-red-600 hover:text-red-700 transition-colors cursor-pointer min-h-[44px] px-4">
                     Supprimer
                 </button>
             </form>

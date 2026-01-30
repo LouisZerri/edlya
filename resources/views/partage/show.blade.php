@@ -35,15 +35,15 @@
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto px-4 py-8">
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {{-- En-tête EDL --}}
         <div class="bg-white rounded-lg border border-slate-200 p-6 mb-6">
-            <div class="flex items-start justify-between mb-4">
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
                 <div>
-                    <h2 class="text-2xl font-semibold text-slate-800">{{ $etatDesLieux->logement->nom }}</h2>
+                    <h2 class="text-xl sm:text-2xl font-semibold text-slate-800">{{ $etatDesLieux->logement->nom }}</h2>
                     <p class="text-slate-500">{{ $etatDesLieux->logement->adresse_complete }}</p>
                 </div>
-                <span class="px-3 py-1 text-sm rounded-full {{ $etatDesLieux->type === 'entree' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700' }}">
+                <span class="px-3 py-1 text-sm rounded-full self-start {{ $etatDesLieux->type === 'entree' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700' }}">
                     {{ $etatDesLieux->type_libelle }}
                 </span>
             </div>

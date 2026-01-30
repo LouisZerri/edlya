@@ -19,8 +19,8 @@
         @csrf
 
         {{-- Résumé dégradations --}}
-        <div class="bg-white rounded-lg border border-slate-200 p-6 mb-6">
-            <div class="flex items-center justify-between mb-4">
+        <div class="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <h2 class="font-medium text-slate-800">Dégradations constatées</h2>
                 @if(count($degradations) > 0)
                     <span class="text-sm text-slate-500">{{ count($degradations) }} dégradation(s)</span>
@@ -34,7 +34,7 @@
                             $hasPhotos = $degradation['element']->photos->isNotEmpty();
                             $firstPhoto = $hasPhotos ? $degradation['element']->photos->first() : null;
                         @endphp
-                        <div class="degradation-item flex items-start gap-4 p-4 bg-red-50 border border-red-200 rounded-lg"
+                        <div class="degradation-item flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 p-4 bg-red-50 border border-red-200 rounded-lg"
                              data-element-id="{{ $degradation['element']->id }}"
                              data-element-nom="{{ $degradation['element']->nom }}"
                              data-element-type="{{ $degradation['element']->type }}"
@@ -43,33 +43,39 @@
                              data-observations="{{ $degradation['element']->observations }}"
                              data-piece="{{ $degradation['piece'] }}"
                              @if($firstPhoto) data-photo-path="{{ $firstPhoto->chemin }}" @endif>
-                            <div class="w-3 h-3 rounded-full bg-red-500 mt-1.5 shrink-0"></div>
+                            <div class="hidden sm:block w-3 h-3 rounded-full bg-red-500 mt-1.5 shrink-0"></div>
                             <div class="flex-1">
-                                <p class="font-medium text-slate-800">
-                                    {{ $degradation['piece'] }} — {{ $degradation['element']->nom }}
-                                </p>
-                                <p class="text-sm text-slate-600">
-                                    {{ $degradation['entree']->etat_libelle }} → {{ $degradation['element']->etat_libelle }}
-                                    <span class="text-red-600 font-medium">({{ abs($degradation['evolution']) }} niveau(x) en moins)</span>
-                                </p>
+                                <div class="flex items-start gap-2">
+                                    <div class="sm:hidden w-3 h-3 rounded-full bg-red-500 mt-1 shrink-0"></div>
+                                    <div class="flex-1">
+                                        <p class="font-medium text-slate-800">
+                                            {{ $degradation['piece'] }} — {{ $degradation['element']->nom }}
+                                        </p>
+                                        <p class="text-sm text-slate-600">
+                                            {{ $degradation['entree']->etat_libelle }} → {{ $degradation['element']->etat_libelle }}
+                                            <span class="text-red-600 font-medium">({{ abs($degradation['evolution']) }} niveau(x) en moins)</span>
+                                        </p>
+                                    </div>
+                                </div>
                                 @if($degradation['element']->observations)
                                     <p class="text-sm text-red-700 mt-1 italic">{{ $degradation['element']->observations }}</p>
                                 @endif
-                                
+
                                 {{-- Photos et bouton IA --}}
-                                <div class="mt-3 flex items-center gap-3">
+                                <div class="mt-3 flex flex-wrap items-center gap-2 sm:gap-3">
                                     @if($hasPhotos)
                                         <div class="flex gap-2">
                                             @foreach($degradation['element']->photos->take(3) as $photo)
-                                                <img src="{{ $photo->url }}" alt="Photo" class="w-12 h-12 object-cover rounded border border-red-300">
+                                                <img src="{{ $photo->url }}" alt="Photo" class="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded border border-red-300">
                                             @endforeach
                                         </div>
-                                        <button type="button" 
-                                                class="analyse-ia-btn text-xs bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors cursor-pointer flex items-center gap-1">
+                                        <button type="button"
+                                                class="analyse-ia-btn text-xs bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors cursor-pointer flex items-center gap-1 min-h-[36px]">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                             </svg>
-                                            Analyser avec IA
+                                            <span class="hidden sm:inline">Analyser avec IA</span>
+                                            <span class="sm:hidden">IA</span>
                                         </button>
                                     @else
                                         <span class="text-xs text-slate-500 italic">Aucune photo disponible pour l'analyse IA</span>
@@ -85,10 +91,10 @@
         </div>
 
         {{-- Devis --}}
-        <div class="bg-white rounded-lg border border-slate-200 p-6 mb-6">
-            <div class="flex items-center justify-between mb-6">
+        <div class="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
                 <h2 class="font-medium text-slate-800">Devis de réparations</h2>
-                <button type="button" id="add-ligne" class="text-sm text-primary-600 hover:text-primary-700 cursor-pointer flex items-center gap-1">
+                <button type="button" id="add-ligne" class="text-sm text-primary-600 hover:text-primary-700 cursor-pointer flex items-center gap-1 min-h-[44px] sm:min-h-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
@@ -132,7 +138,7 @@
         </div>
 
         {{-- Réparations suggérées --}}
-        <div class="bg-white rounded-lg border border-slate-200 p-6 mb-6">
+        <div class="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 mb-6">
             <h2 class="font-medium text-slate-800 mb-4">Réparations suggérées</h2>
             <p class="text-sm text-slate-500 mb-4">Cliquez sur une réparation pour l'ajouter au devis.</p>
 
@@ -174,9 +180,9 @@
 
     {{-- Modale résultat IA --}}
     <div id="ia-result-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="flex items-end sm:items-center justify-center min-h-screen px-0 sm:px-4">
             <div class="fixed inset-0 bg-slate-900/50 transition-opacity"></div>
-            <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+            <div class="relative bg-white rounded-t-xl sm:rounded-lg shadow-xl w-full sm:max-w-2xl p-4 sm:p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-medium text-slate-800">Analyse IA des dégradations</h3>
                     <button type="button" id="ia-modal-close" class="text-slate-400 hover:text-slate-600 cursor-pointer">

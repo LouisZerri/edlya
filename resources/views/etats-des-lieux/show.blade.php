@@ -13,22 +13,22 @@
     {{-- En-tête --}}
     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div>
-            <div class="flex items-center gap-3 mb-2">
-                <h1 class="text-2xl font-semibold text-slate-800">{{ $etatDesLieux->logement->nom }}</h1>
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                <h1 class="text-xl sm:text-2xl font-semibold text-slate-800">{{ $etatDesLieux->logement->nom }}</h1>
                 <span
-                    class="px-3 py-1 text-sm rounded-full {{ $etatDesLieux->type === 'entree' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700' }}">
+                    class="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-full {{ $etatDesLieux->type === 'entree' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700' }}">
                     {{ $etatDesLieux->type_libelle }}
                 </span>
-                <span class="px-3 py-1 text-sm rounded-full {{ $etatDesLieux->statut_couleur }}">
+                <span class="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-full {{ $etatDesLieux->statut_couleur }}">
                     {{ $etatDesLieux->statut_libelle }}
                 </span>
             </div>
             <p class="text-slate-500">{{ $etatDesLieux->logement->adresse_complete }}</p>
         </div>
 
-        <div class="flex flex-wrap gap-3">
+        <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3">
             <a href="{{ route('etats-des-lieux.edit', $etatDesLieux) }}"
-                class="inline-flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium">
+                class="inline-flex items-center justify-center gap-2 bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium min-h-[44px]">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -39,7 +39,7 @@
             {{-- Bouton Signer --}}
             @if ($etatDesLieux->statut !== 'signe')
                 <a href="{{ route('etats-des-lieux.signature', $etatDesLieux) }}"
-                    class="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                    class="inline-flex items-center justify-center gap-2 bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium min-h-[44px]">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -49,17 +49,17 @@
             @endif
 
             <a href="{{ route('etats-des-lieux.pdf', $etatDesLieux) }}"
-                class="inline-flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 transition-colors text-sm font-medium">
+                class="inline-flex items-center justify-center gap-2 bg-slate-800 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-slate-900 transition-colors text-sm font-medium min-h-[44px]">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Télécharger PDF
+                PDF
             </a>
 
             @if ($etatDesLieux->type === 'sortie')
                 <a href="{{ route('etats-des-lieux.comparatif', $etatDesLieux) }}"
-                    class="inline-flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium">
+                    class="inline-flex items-center justify-center gap-2 bg-amber-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium min-h-[44px]">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -283,9 +283,53 @@
                         {{ $allPhotos->count() }} photo(s)</p>
                 </div>
 
-                <div class="p-6">
+                <div class="p-4 sm:p-6">
                     @if ($piece->elements->isNotEmpty())
-                        <div class="overflow-x-auto">
+                        {{-- Vue mobile : Cards --}}
+                        <div class="md:hidden space-y-3">
+                            @foreach ($piece->elements as $element)
+                                @php
+                                    $observations = $element->observations ?: '';
+                                    $observations = preg_replace('/,?\s*\(Photo \d+\)/', '', $observations);
+                                    $observations = trim($observations);
+                                    $photoNumbers = $element->photos->map(fn($p) => 'Photo ' . $photoNumberMap[$p->id])->implode(', ');
+                                @endphp
+                                <div class="bg-slate-50 rounded-lg p-4">
+                                    <div class="flex items-start justify-between gap-3 mb-2">
+                                        <div>
+                                            <p class="font-medium text-slate-800">{{ $element->nom }}</p>
+                                            <p class="text-xs text-slate-500">{{ $element->type_libelle }}</p>
+                                        </div>
+                                        <span class="px-2 py-1 text-xs rounded-full whitespace-nowrap {{ $element->etat_couleur }}">
+                                            {{ $element->etat_libelle }}
+                                        </span>
+                                    </div>
+                                    @if ($element->hasDegradations())
+                                        <div class="flex flex-wrap gap-1 mb-2">
+                                            @foreach ($element->degradations as $degradation)
+                                                <span class="inline-block px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">
+                                                    {{ $degradation }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                    @if ($observations)
+                                        <p class="text-sm text-slate-600 mb-2">{{ $observations }}</p>
+                                    @endif
+                                    @if ($photoNumbers)
+                                        <span class="inline-flex items-center gap-1 text-primary-600 font-medium text-sm">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            {{ $photoNumbers }}
+                                        </span>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+
+                        {{-- Vue desktop : Table --}}
+                        <div class="hidden md:block overflow-x-auto">
                             <table class="w-full text-sm">
                                 <thead>
                                     <tr class="border-b border-slate-200">
@@ -323,14 +367,12 @@
                                             </td>
                                             <td class="py-3 px-4 text-slate-600">
                                                 @php
-                                                    // Nettoyer les références (Photo X) des observations pour éviter les doublons
                                                     $observations = $element->observations ?: '';
                                                     $observations = preg_replace('/,?\s*\(Photo \d+\)/', '', $observations);
                                                     $observations = trim($observations);
-                                                    
                                                     $photoNumbers = $element->photos->map(fn($p) => 'Photo ' . $photoNumberMap[$p->id])->implode(', ');
                                                 @endphp
-                                                
+
                                                 @if ($observations && $photoNumbers)
                                                     {{ $observations }}
                                                     <span class="inline-flex items-center gap-1 ml-2 text-primary-600 font-medium">
@@ -362,7 +404,7 @@
                         @if ($allPhotos->isNotEmpty())
                             <div class="mt-6 pt-6 border-t border-slate-200">
                                 <h4 class="text-sm font-medium text-slate-700 mb-3">Photos de la pièce</h4>
-                                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                                     @foreach ($allPhotos as $index => $photo)
                                         <a href="{{ Storage::url($photo->chemin) }}" target="_blank"
                                             class="group relative block">

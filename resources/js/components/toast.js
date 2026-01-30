@@ -19,9 +19,9 @@ class Toast {
         const toast = document.createElement('div');
         toast.className = this.getClasses(type);
         toast.innerHTML = `
-            <span>${message}</span>
-            <button type="button" class="ml-4 text-current opacity-70 hover:opacity-100" data-dismiss="toast">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span class="flex-1">${message}</span>
+            <button type="button" class="ml-3 flex-shrink-0 text-current opacity-70 hover:opacity-100 p-1" data-dismiss="toast">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
@@ -39,8 +39,8 @@ class Toast {
     }
 
     getClasses(type) {
-        const base = 'flex items-center px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-0';
-        
+        const base = 'flex items-center px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg shadow-lg text-sm transform transition-all duration-300 translate-x-0';
+
         const variants = {
             success: 'bg-green-600 text-white',
             error: 'bg-red-600 text-white',

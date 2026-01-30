@@ -12,9 +12,12 @@
 
     <h1 class="text-2xl font-semibold text-slate-800 mb-6">Modifier l'état des lieux</h1>
 
+    {{-- Mobile Drawer Navigation --}}
+    <x-mobile-drawer :etatDesLieux="$etatDesLieux" />
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {{-- Colonne gauche : Navigation sticky + Infos générales --}}
-        <div class="lg:col-span-1 space-y-6">
+        {{-- Colonne gauche : Navigation sticky + Infos générales (desktop only) --}}
+        <div class="hidden lg:block lg:col-span-1 space-y-6">
             {{-- Wrapper sticky pour progression + navigation uniquement --}}
             @if ($etatDesLieux->pieces->count() > 0)
                 <div class="lg:sticky lg:top-6 space-y-4 z-10">
@@ -73,8 +76,8 @@
             @endif
         </div>
 
-        {{-- Colonne centrale : Infos générales --}}
-        <div class="lg:col-span-2 space-y-6">
+        {{-- Colonne centrale : Infos générales (full width on mobile) --}}
+        <div class="col-span-1 lg:col-span-2 space-y-6">
             {{-- Formulaire informations générales --}}
             <div id="infos-generales" class="bg-white p-6 rounded-lg border border-slate-200 scroll-mt-6">
                 <h2 class="font-medium text-slate-800 mb-4">Informations générales</h2>
@@ -161,7 +164,7 @@
                         ];
                     @endphp
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         @foreach ($typesCompteurs as $type => $config)
                             @php
                                 $compteur = $etatDesLieux->compteurs->where('type', $type)->first();
@@ -343,14 +346,14 @@
                                         @csrf
                                         @method('PUT')
 
-                                        <div class="flex items-start gap-4">
+                                        <div class="flex flex-col sm:flex-row sm:items-start gap-4">
                                             {{-- Photo --}}
-                                            <div class="flex-shrink-0">
+                                            <div class="flex-shrink-0 flex items-center gap-4 sm:block">
                                                 @if ($cle->photo)
                                                     <div class="relative">
                                                         <a href="{{ $cle->photo_url }}" target="_blank">
                                                             <img src="{{ $cle->photo_url }}" alt="Photo clé"
-                                                                class="w-20 h-20 object-cover rounded-lg border border-slate-200">
+                                                                class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border border-slate-200">
                                                         </a>
                                                         <button type="button"
                                                             class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 text-xs cursor-pointer flex items-center justify-center shadow-md"
@@ -361,8 +364,8 @@
                                                 @else
                                                     <label class="cursor-pointer block">
                                                         <div
-                                                            class="w-20 h-20 bg-white border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center hover:border-amber-400 hover:bg-amber-50 transition-colors">
-                                                            <svg class="w-6 h-6 text-slate-400" fill="none"
+                                                            class="w-16 h-16 sm:w-20 sm:h-20 bg-white border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center hover:border-amber-400 hover:bg-amber-50 transition-colors">
+                                                            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" fill="none"
                                                                 stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round"
                                                                     stroke-width="2"
@@ -374,35 +377,45 @@
                                                             class="hidden cle-file-input" data-id="{{ $cle->id }}">
                                                     </label>
                                                 @endif
+                                                {{-- Bouton save visible sur mobile à côté de la photo --}}
+                                                <button type="submit"
+                                                    class="sm:hidden p-3 text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors cursor-pointer min-h-[44px]"
+                                                    title="Sauvegarder">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </button>
                                             </div>
 
                                             {{-- Champs --}}
-                                            <div class="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3">
-                                                <div class="sm:col-span-1">
+                                            <div class="flex-1 grid grid-cols-2 gap-3">
+                                                <div class="col-span-1">
                                                     <label class="block text-xs text-slate-500 mb-1">Type</label>
                                                     <input type="text" name="type" value="{{ $cle->type }}"
-                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white"
+                                                        class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white min-h-[44px]"
                                                         placeholder="Type de clé" required>
                                                 </div>
 
-                                                <div class="sm:col-span-1">
+                                                <div class="col-span-1">
                                                     <label class="block text-xs text-slate-500 mb-1">Nombre</label>
                                                     <input type="number" name="nombre" value="{{ $cle->nombre }}"
                                                         min="1" max="99"
-                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white text-center"
+                                                        class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white text-center min-h-[44px]"
                                                         required>
                                                 </div>
 
-                                                <div class="sm:col-span-2">
+                                                <div class="col-span-2">
                                                     <label class="block text-xs text-slate-500 mb-1">Commentaire</label>
                                                     <input type="text" name="commentaire" value="{{ $cle->commentaire }}"
-                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white"
+                                                        class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white min-h-[44px]"
                                                         placeholder="Optionnel">
                                                 </div>
                                             </div>
 
-                                            {{-- Actions --}}
-                                            <div class="flex flex-col gap-2">
+                                            {{-- Actions desktop --}}
+                                            <div class="hidden sm:flex flex-col gap-2">
                                                 <button type="submit"
                                                     class="p-2 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors cursor-pointer"
                                                     title="Sauvegarder">
@@ -445,13 +458,13 @@
                         <form method="POST" action="{{ route('cles.store', $etatDesLieux) }}"
                             enctype="multipart/form-data">
                             @csrf
-                            <div class="flex items-start gap-4">
+                            <div class="flex flex-col sm:flex-row sm:items-start gap-4">
                                 {{-- Photo --}}
-                                <div class="flex-shrink-0">
+                                <div class="flex-shrink-0 flex items-center gap-4 sm:block">
                                     <label class="cursor-pointer block">
-                                        <div class="w-20 h-20 bg-white border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center hover:border-amber-400 hover:bg-amber-50 transition-colors"
+                                        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center hover:border-amber-400 hover:bg-amber-50 transition-colors"
                                             id="new-cle-photo-preview">
-                                            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor"
+                                            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -461,14 +474,19 @@
                                         <input type="file" name="photo" accept="image/*" class="hidden"
                                             id="new-cle-photo-input">
                                     </label>
+                                    {{-- Bouton mobile --}}
+                                    <button type="submit"
+                                        class="sm:hidden bg-primary-600 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors cursor-pointer min-h-[44px]">
+                                        Ajouter
+                                    </button>
                                 </div>
 
                                 {{-- Champs --}}
-                                <div class="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3">
-                                    <div class="sm:col-span-1">
+                                <div class="flex-1 grid grid-cols-2 gap-3">
+                                    <div class="col-span-1">
                                         <label class="block text-xs text-slate-500 mb-1">Type</label>
                                         <select name="type" required
-                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
+                                            class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white min-h-[44px]">
                                             <option value="">Choisir...</option>
                                             @foreach (\App\Models\Cle::getTypesCommuns() as $typeCommun)
                                                 <option value="{{ $typeCommun }}">{{ $typeCommun }}</option>
@@ -476,22 +494,22 @@
                                         </select>
                                     </div>
 
-                                    <div class="sm:col-span-1">
+                                    <div class="col-span-1">
                                         <label class="block text-xs text-slate-500 mb-1">Nombre</label>
                                         <input type="number" name="nombre" value="1" min="1" max="99"
                                             required
-                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white text-center">
+                                            class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white text-center min-h-[44px]">
                                     </div>
 
-                                    <div class="sm:col-span-2">
+                                    <div class="col-span-2">
                                         <label class="block text-xs text-slate-500 mb-1">Commentaire</label>
                                         <input type="text" name="commentaire" placeholder="Optionnel"
-                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
+                                            class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white min-h-[44px]">
                                     </div>
                                 </div>
 
-                                {{-- Bouton --}}
-                                <div class="flex-shrink-0">
+                                {{-- Bouton desktop --}}
+                                <div class="hidden sm:block flex-shrink-0">
                                     <button type="submit"
                                         class="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors cursor-pointer mt-5">
                                         Ajouter
@@ -856,9 +874,9 @@
                                 <p class="text-sm font-medium text-slate-700 mb-3">Ajouter un élément</p>
                                 <form method="POST" action="{{ route('elements.store', $piece) }}">
                                     @csrf
-                                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                                         <select name="type" required
-                                            class="px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
+                                            class="px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white min-h-[44px]">
                                             <option value="">Type</option>
                                             <option value="sol">Sol</option>
                                             <option value="mur">Mur</option>
@@ -873,9 +891,9 @@
                                             <option value="autre">Autre</option>
                                         </select>
                                         <input type="text" name="nom" placeholder="Nom de l'élément" required
-                                            class="px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
+                                            class="px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white min-h-[44px]">
                                         <select name="etat" required
-                                            class="px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
+                                            class="px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white min-h-[44px]">
                                             <option value="">État</option>
                                             <option value="neuf">Neuf</option>
                                             <option value="tres_bon">Très bon</option>
@@ -885,7 +903,7 @@
                                             <option value="hors_service">Hors service</option>
                                         </select>
                                         <button type="submit"
-                                            class="bg-primary-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors cursor-pointer">
+                                            class="bg-primary-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors cursor-pointer min-h-[44px] sm:col-span-2 lg:col-span-1">
                                             Ajouter
                                         </button>
                                     </div>
@@ -901,7 +919,7 @@
                                 </p>
 
                                 @if ($allPhotos->isNotEmpty())
-                                    <div class="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4">
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
                                         @foreach ($allPhotos as $index => $photo)
                                             <div class="text-center relative">
                                                 <a href="{{ $photo->url }}" target="_blank"
@@ -931,38 +949,40 @@
                                         <form method="POST" action="{{ route('pieces.photos.store', $piece) }}"
                                             enctype="multipart/form-data">
                                             @csrf
-                                            <div class="flex items-center gap-3">
+                                            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                                                 <select name="element_id" required
-                                                    class="px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white">
+                                                    class="px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white min-h-[44px]">
                                                     @foreach ($piece->elements as $element)
                                                         <option value="{{ $element->id }}">{{ $element->nom }}</option>
                                                     @endforeach
                                                 </select>
-                                                <label class="flex-1 cursor-pointer">
-                                                    <div
-                                                        class="flex items-center gap-3 px-4 py-2.5 bg-white border border-slate-200 border-dashed rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors">
-                                                        <svg class="w-5 h-5 text-slate-400" fill="none"
-                                                            stroke="currentColor" viewBox="0 0 24 24">
+                                                <div class="flex items-center gap-3 flex-1">
+                                                    <label class="flex-1 cursor-pointer">
+                                                        <div
+                                                            class="flex items-center gap-3 px-4 py-2.5 bg-white border border-slate-200 border-dashed rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors min-h-[44px]">
+                                                            <svg class="w-5 h-5 text-slate-400 flex-shrink-0" fill="none"
+                                                                stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            </svg>
+                                                            <span class="text-sm text-slate-600 truncate file-label">Choisir
+                                                                une photo</span>
+                                                        </div>
+                                                        <input type="file" name="photo" accept="image/*" required
+                                                            class="hidden file-input">
+                                                    </label>
+                                                    <button type="submit"
+                                                        class="bg-primary-600 text-white px-4 py-2.5 rounded-lg hover:bg-primary-700 cursor-pointer transition-colors min-h-[44px] flex-shrink-0">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                stroke-width="2" d="M12 4v16m8-8H4" />
                                                         </svg>
-                                                        <span class="text-sm text-slate-600 truncate file-label">Choisir
-                                                            une photo</span>
-                                                    </div>
-                                                    <input type="file" name="photo" accept="image/*" required
-                                                        class="hidden file-input">
-                                                </label>
-                                                <button type="submit"
-                                                    class="bg-primary-600 text-white px-4 py-2.5 rounded-lg hover:bg-primary-700 cursor-pointer transition-colors">
-                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2" d="M12 4v16m8-8H4" />
-                                                    </svg>
-                                                </button>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </form>
                                     </div>
@@ -991,12 +1011,12 @@
                     <p class="text-sm font-medium text-slate-700 mb-3">Ajouter une nouvelle pièce</p>
                     <form method="POST" action="{{ route('pieces.store', $etatDesLieux) }}">
                         @csrf
-                        <div class="flex gap-3">
+                        <div class="flex flex-col sm:flex-row gap-3">
                             <input type="text" name="nom"
-                                placeholder="Nom de la pièce (ex: Salon, Chambre 1, Cuisine...)" required
-                                class="flex-1 px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none">
+                                placeholder="Nom de la pièce (ex: Salon, Chambre 1...)" required
+                                class="flex-1 px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none min-h-[44px]">
                             <button type="submit"
-                                class="bg-primary-600 text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors cursor-pointer">
+                                class="bg-primary-600 text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors cursor-pointer min-h-[44px]">
                                 Ajouter la pièce
                             </button>
                         </div>

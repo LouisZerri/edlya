@@ -45,34 +45,34 @@
                     :required="true"
                 />
 
-                <div class="grid grid-cols-2 gap-4">
-                    <x-form.input 
-                        name="code_postal" 
-                        label="Code postal" 
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <x-form.input
+                        name="code_postal"
+                        label="Code postal"
                         :value="$logement->code_postal"
                         :required="true"
                     />
 
-                    <x-form.input 
-                        name="ville" 
-                        label="Ville" 
+                    <x-form.input
+                        name="ville"
+                        label="Ville"
                         :value="$logement->ville"
                         :required="true"
                     />
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <x-form.input 
-                        name="surface" 
-                        type="number" 
-                        label="Surface (m²)" 
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <x-form.input
+                        name="surface"
+                        type="number"
+                        label="Surface (m²)"
                         :value="$logement->surface"
                     />
 
-                    <x-form.input 
-                        name="nb_pieces" 
-                        type="number" 
-                        label="Nombre de pièces" 
+                    <x-form.input
+                        name="nb_pieces"
+                        type="number"
+                        label="Nombre de pièces"
                         :value="$logement->nb_pieces"
                     />
                 </div>

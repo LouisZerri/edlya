@@ -14,12 +14,55 @@
         <p class="text-slate-500 mb-6">{{ $etatDesLieux->logement->nom }} - {{ $etatDesLieux->type_libelle }}</p>
 
         {{-- Étapes --}}
+        @php
+            $etape = $etatDesLieux->etape_signature;
+        @endphp
         <div class="mb-8">
-            <div class="flex items-center justify-between">
-                @php
-                    $etape = $etatDesLieux->etape_signature;
-                @endphp
-                
+            {{-- Version mobile: verticale --}}
+            <div class="sm:hidden space-y-3">
+                {{-- Étape 1 --}}
+                <div class="flex items-center gap-3 {{ $etape >= 1 ? '' : 'opacity-50' }}">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center font-semibold flex-shrink-0 {{ $etape >= 1 ? ($etape > 1 ? 'bg-green-500 text-white' : 'bg-primary-600 text-white') : 'bg-slate-200 text-slate-500' }}">
+                        @if($etape > 1)
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        @else
+                            1
+                        @endif
+                    </div>
+                    <span class="text-sm font-medium {{ $etape >= 1 ? 'text-slate-800' : 'text-slate-400' }}">Signature bailleur</span>
+                </div>
+                {{-- Étape 2 --}}
+                <div class="flex items-center gap-3 {{ $etape >= 2 ? '' : 'opacity-50' }}">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center font-semibold flex-shrink-0 {{ $etape >= 2 ? ($etape > 2 ? 'bg-green-500 text-white' : 'bg-primary-600 text-white') : 'bg-slate-200 text-slate-500' }}">
+                        @if($etape > 2)
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        @else
+                            2
+                        @endif
+                    </div>
+                    <span class="text-sm font-medium {{ $etape >= 2 ? 'text-slate-800' : 'text-slate-400' }}">Envoi au locataire</span>
+                </div>
+                {{-- Étape 3 --}}
+                <div class="flex items-center gap-3 {{ $etape >= 3 ? '' : 'opacity-50' }}">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center font-semibold flex-shrink-0 {{ $etape >= 3 ? ($etape > 3 ? 'bg-green-500 text-white' : 'bg-primary-600 text-white') : 'bg-slate-200 text-slate-500' }}">
+                        @if($etape > 3)
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        @else
+                            3
+                        @endif
+                    </div>
+                    <span class="text-sm font-medium {{ $etape >= 3 ? 'text-slate-800' : 'text-slate-400' }}">Signature locataire</span>
+                </div>
+            </div>
+
+            {{-- Version desktop: horizontale --}}
+            <div class="hidden sm:flex items-center justify-between">
                 {{-- Étape 1 --}}
                 <div class="flex items-center">
                     <div class="w-10 h-10 rounded-full flex items-center justify-center font-semibold {{ $etape >= 1 ? ($etape > 1 ? 'bg-green-500 text-white' : 'bg-primary-600 text-white') : 'bg-slate-200 text-slate-500' }}">
@@ -99,7 +142,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 font-medium cursor-pointer transition-colors">
+                    <button type="submit" class="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 font-medium cursor-pointer transition-colors min-h-[48px]">
                         Valider ma signature
                     </button>
                 </form>
@@ -163,7 +206,7 @@
 
                         <form method="POST" action="{{ route('etats-des-lieux.signature.envoyer-lien', $etatDesLieux) }}">
                             @csrf
-                            <button type="submit" class="w-full bg-amber-500 text-white py-3 px-4 rounded-lg hover:bg-amber-600 font-medium cursor-pointer transition-colors">
+                            <button type="submit" class="w-full bg-amber-500 text-white py-3 px-4 rounded-lg hover:bg-amber-600 font-medium cursor-pointer transition-colors min-h-[48px]">
                                 Envoyer le lien de signature
                             </button>
                         </form>

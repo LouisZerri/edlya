@@ -17,9 +17,9 @@
             <p class="text-slate-500">{{ $edlSortie->logement->adresse_complete }}</p>
         </div>
 
-        <div class="flex gap-3">
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <a href="{{ route('etats-des-lieux.comparatif.pdf', $edlSortie) }}"
-                class="inline-flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 transition-colors text-sm font-medium">
+                class="inline-flex items-center justify-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 transition-colors text-sm font-medium min-h-[44px]">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -27,7 +27,7 @@
                 Télécharger PDF
             </a>
             <a href="{{ route('etats-des-lieux.estimation', $edlSortie) }}"
-                class="inline-flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium">
+                class="inline-flex items-center justify-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium min-h-[44px]">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -84,69 +84,99 @@
                     Comparatif des compteurs
                 </h2>
             </div>
-            <div class="p-6">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="border-b border-slate-200">
-                            <th class="text-left py-3 px-4 font-medium text-slate-600">Type</th>
-                            <th class="text-left py-3 px-4 font-medium text-slate-600">N° Compteur</th>
-                            <th class="text-center py-3 px-4 font-medium text-blue-600 bg-blue-50">Index entrée</th>
-                            <th class="text-center py-3 px-4 font-medium text-orange-600 bg-orange-50">Index sortie</th>
-                            <th class="text-center py-3 px-4 font-medium text-slate-600">Consommation</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <div class="p-4 sm:p-6">
+                @php
+                    $typesCompteurs = [
+                        'electricite' => '⚡ Électricité',
+                        'eau_froide' => '💧 Eau froide',
+                        'eau_chaude' => '🔥 Eau chaude',
+                        'gaz' => '🔵 Gaz',
+                    ];
+                    $unites = [
+                        'electricite' => 'kWh',
+                        'eau_froide' => 'm³',
+                        'eau_chaude' => 'm³',
+                        'gaz' => 'm³',
+                    ];
+                @endphp
+
+                {{-- Vue mobile : Cards --}}
+                <div class="md:hidden space-y-3">
+                    @foreach ($typesCompteurs as $type => $label)
                         @php
-                            $typesCompteurs = [
-                                'electricite' => '⚡ Électricité',
-                                'eau_froide' => '💧 Eau froide',
-                                'eau_chaude' => '🔥 Eau chaude',
-                                'gaz' => '🔵 Gaz',
-                            ];
-                            $unites = [
-                                'electricite' => 'kWh',
-                                'eau_froide' => 'm³',
-                                'eau_chaude' => 'm³',
-                                'gaz' => 'm³',
-                            ];
+                            $compteurEntree = $edlEntree->compteurs->where('type', $type)->first();
+                            $compteurSortie = $edlSortie->compteurs->where('type', $type)->first();
+                            $indexEntree = $compteurEntree?->index ? (float) preg_replace('/[^0-9.]/', '', $compteurEntree->index) : null;
+                            $indexSortie = $compteurSortie?->index ? (float) preg_replace('/[^0-9.]/', '', $compteurSortie->index) : null;
+                            $consommation = $indexEntree !== null && $indexSortie !== null ? $indexSortie - $indexEntree : null;
                         @endphp
-                        @foreach ($typesCompteurs as $type => $label)
-                            @php
-                                $compteurEntree = $edlEntree->compteurs->where('type', $type)->first();
-                                $compteurSortie = $edlSortie->compteurs->where('type', $type)->first();
-                                $indexEntree = $compteurEntree?->index
-                                    ? (float) preg_replace('/[^0-9.]/', '', $compteurEntree->index)
-                                    : null;
-                                $indexSortie = $compteurSortie?->index
-                                    ? (float) preg_replace('/[^0-9.]/', '', $compteurSortie->index)
-                                    : null;
-                                $consommation =
-                                    $indexEntree !== null && $indexSortie !== null ? $indexSortie - $indexEntree : null;
-                            @endphp
-                            @if ($compteurEntree || $compteurSortie)
-                                <tr class="border-b border-slate-100">
-                                    <td class="py-3 px-4 font-medium">{{ $label }}</td>
-                                    <td class="py-3 px-4 text-slate-500 text-xs">
-                                        {{ $compteurEntree?->numero ?? ($compteurSortie?->numero ?? '-') }}</td>
-                                    <td class="py-3 px-4 text-center bg-blue-50 font-semibold">
-                                        {{ $compteurEntree?->index ?? '-' }}</td>
-                                    <td class="py-3 px-4 text-center bg-orange-50 font-semibold">
-                                        {{ $compteurSortie?->index ?? '-' }}</td>
-                                    <td class="py-3 px-4 text-center">
-                                        @if ($consommation !== null)
-                                            <span
-                                                class="font-bold {{ $consommation >= 0 ? 'text-slate-800' : 'text-red-600' }}">
-                                                {{ number_format($consommation, 0, ',', ' ') }} {{ $unites[$type] }}
-                                            </span>
-                                        @else
-                                            <span class="text-slate-400">-</span>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endif
-                        @endforeach
-                    </tbody>
-                </table>
+                        @if ($compteurEntree || $compteurSortie)
+                            <div class="bg-slate-50 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="font-medium text-slate-800">{{ $label }}</span>
+                                    @if ($consommation !== null)
+                                        <span class="font-bold text-sm {{ $consommation >= 0 ? 'text-slate-800' : 'text-red-600' }}">
+                                            {{ number_format($consommation, 0, ',', ' ') }} {{ $unites[$type] }}
+                                        </span>
+                                    @endif
+                                </div>
+                                <div class="grid grid-cols-2 gap-3 text-sm">
+                                    <div class="bg-blue-50 rounded p-2 text-center">
+                                        <p class="text-xs text-blue-600 mb-1">Entrée</p>
+                                        <p class="font-semibold">{{ $compteurEntree?->index ?? '-' }}</p>
+                                    </div>
+                                    <div class="bg-orange-50 rounded p-2 text-center">
+                                        <p class="text-xs text-orange-600 mb-1">Sortie</p>
+                                        <p class="font-semibold">{{ $compteurSortie?->index ?? '-' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+
+                {{-- Vue desktop : Table --}}
+                <div class="hidden md:block">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200">
+                                <th class="text-left py-3 px-4 font-medium text-slate-600">Type</th>
+                                <th class="text-left py-3 px-4 font-medium text-slate-600">N° Compteur</th>
+                                <th class="text-center py-3 px-4 font-medium text-blue-600 bg-blue-50">Index entrée</th>
+                                <th class="text-center py-3 px-4 font-medium text-orange-600 bg-orange-50">Index sortie</th>
+                                <th class="text-center py-3 px-4 font-medium text-slate-600">Consommation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($typesCompteurs as $type => $label)
+                                @php
+                                    $compteurEntree = $edlEntree->compteurs->where('type', $type)->first();
+                                    $compteurSortie = $edlSortie->compteurs->where('type', $type)->first();
+                                    $indexEntree = $compteurEntree?->index ? (float) preg_replace('/[^0-9.]/', '', $compteurEntree->index) : null;
+                                    $indexSortie = $compteurSortie?->index ? (float) preg_replace('/[^0-9.]/', '', $compteurSortie->index) : null;
+                                    $consommation = $indexEntree !== null && $indexSortie !== null ? $indexSortie - $indexEntree : null;
+                                @endphp
+                                @if ($compteurEntree || $compteurSortie)
+                                    <tr class="border-b border-slate-100">
+                                        <td class="py-3 px-4 font-medium">{{ $label }}</td>
+                                        <td class="py-3 px-4 text-slate-500 text-xs">{{ $compteurEntree?->numero ?? ($compteurSortie?->numero ?? '-') }}</td>
+                                        <td class="py-3 px-4 text-center bg-blue-50 font-semibold">{{ $compteurEntree?->index ?? '-' }}</td>
+                                        <td class="py-3 px-4 text-center bg-orange-50 font-semibold">{{ $compteurSortie?->index ?? '-' }}</td>
+                                        <td class="py-3 px-4 text-center">
+                                            @if ($consommation !== null)
+                                                <span class="font-bold {{ $consommation >= 0 ? 'text-slate-800' : 'text-red-600' }}">
+                                                    {{ number_format($consommation, 0, ',', ' ') }} {{ $unites[$type] }}
+                                                </span>
+                                            @else
+                                                <span class="text-slate-400">-</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endif
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     @endif
@@ -163,7 +193,7 @@
                     Comparatif des clés
                 </h2>
             </div>
-            <div class="p-6">
+            <div class="p-4 sm:p-6">
                 @php
                     $tousTypesClés = $edlEntree->cles
                         ->pluck('type')
@@ -174,90 +204,154 @@
                     $differenceTotal = $totalSortie - $totalEntree;
                 @endphp
 
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="border-b border-slate-200">
-                            <th class="text-left py-3 px-4 font-medium text-slate-600">Type de clé</th>
-                            <th class="text-center py-3 px-4 font-medium text-blue-600 bg-blue-50">Photo entrée</th>
-                            <th class="text-center py-3 px-4 font-medium text-blue-600 bg-blue-50">Qté entrée</th>
-                            <th class="text-center py-3 px-4 font-medium text-orange-600 bg-orange-50">Photo sortie</th>
-                            <th class="text-center py-3 px-4 font-medium text-orange-600 bg-orange-50">Qté sortie</th>
-                            <th class="text-center py-3 px-4 font-medium text-slate-600">Différence</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($tousTypesClés as $type)
-                            @php
-                                $cleEntree = $edlEntree->cles->where('type', $type)->first();
-                                $cleSortie = $edlSortie->cles->where('type', $type)->first();
-                                $nbEntree = $cleEntree?->nombre ?? 0;
-                                $nbSortie = $cleSortie?->nombre ?? 0;
-                                $difference = $nbSortie - $nbEntree;
-                            @endphp
-                            <tr class="border-b border-slate-100 {{ $difference < 0 ? 'bg-red-50' : '' }}">
-                                <td class="py-3 px-4 font-medium">🔑 {{ $type }}</td>
-                                <td class="py-3 px-4 text-center bg-blue-50">
+                {{-- Vue mobile : Cards --}}
+                <div class="md:hidden space-y-3">
+                    @foreach ($tousTypesClés as $type)
+                        @php
+                            $cleEntree = $edlEntree->cles->where('type', $type)->first();
+                            $cleSortie = $edlSortie->cles->where('type', $type)->first();
+                            $nbEntree = $cleEntree?->nombre ?? 0;
+                            $nbSortie = $cleSortie?->nombre ?? 0;
+                            $difference = $nbSortie - $nbEntree;
+                        @endphp
+                        <div class="rounded-lg p-4 {{ $difference < 0 ? 'bg-red-50 border border-red-200' : 'bg-slate-50' }}">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="font-medium text-slate-800">🔑 {{ $type }}</span>
+                                @if ($difference < 0)
+                                    <span class="inline-flex items-center gap-1 text-red-600 font-bold text-sm">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                        {{ $difference }}
+                                    </span>
+                                @elseif($difference > 0)
+                                    <span class="text-green-600 font-bold text-sm">+{{ $difference }}</span>
+                                @else
+                                    <span class="text-slate-400 text-sm">=</span>
+                                @endif
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div class="bg-blue-50 rounded p-3 text-center">
+                                    <p class="text-xs text-blue-600 mb-2">Entrée</p>
                                     @if ($cleEntree?->photo)
                                         <a href="{{ $cleEntree->photo_url }}" target="_blank">
-                                            <img src="{{ $cleEntree->photo_url }}" alt="Photo"
-                                                class="w-10 h-10 object-cover rounded mx-auto border border-slate-200 hover:opacity-80">
+                                            <img src="{{ $cleEntree->photo_url }}" alt="Photo" class="w-10 h-10 object-cover rounded mx-auto border border-slate-200 hover:opacity-80 mb-1">
                                         </a>
-                                    @else
-                                        <span class="text-slate-400">-</span>
                                     @endif
-                                </td>
-                                <td class="py-3 px-4 text-center bg-blue-50 font-semibold">
-                                    {{ $nbEntree > 0 ? $nbEntree : '-' }}</td>
-                                <td class="py-3 px-4 text-center bg-orange-50">
+                                    <p class="font-semibold">{{ $nbEntree > 0 ? $nbEntree : '-' }}</p>
+                                </div>
+                                <div class="bg-orange-50 rounded p-3 text-center">
+                                    <p class="text-xs text-orange-600 mb-2">Sortie</p>
                                     @if ($cleSortie?->photo)
                                         <a href="{{ $cleSortie->photo_url }}" target="_blank">
-                                            <img src="{{ $cleSortie->photo_url }}" alt="Photo"
-                                                class="w-10 h-10 object-cover rounded mx-auto border border-slate-200 hover:opacity-80">
+                                            <img src="{{ $cleSortie->photo_url }}" alt="Photo" class="w-10 h-10 object-cover rounded mx-auto border border-slate-200 hover:opacity-80 mb-1">
                                         </a>
-                                    @else
-                                        <span class="text-slate-400">-</span>
                                     @endif
-                                </td>
-                                <td class="py-3 px-4 text-center bg-orange-50 font-semibold">
-                                    {{ $nbSortie > 0 ? $nbSortie : '-' }}</td>
+                                    <p class="font-semibold">{{ $nbSortie > 0 ? $nbSortie : '-' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                    {{-- Total mobile --}}
+                    <div class="bg-slate-100 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-slate-800">Total</span>
+                            <div class="flex items-center gap-4 text-sm">
+                                <span class="text-blue-600">Entrée: <strong>{{ $totalEntree }}</strong></span>
+                                <span class="text-orange-600">Sortie: <strong>{{ $totalSortie }}</strong></span>
+                            </div>
+                        </div>
+                        @if ($differenceTotal < 0)
+                            <p class="text-red-600 font-bold text-sm mt-2">{{ $differenceTotal }} manquante(s)</p>
+                        @elseif($differenceTotal > 0)
+                            <p class="text-green-600 text-sm mt-2">+{{ $differenceTotal }}</p>
+                        @else
+                            <p class="text-green-600 text-sm mt-2">✓ Complet</p>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Vue desktop : Table --}}
+                <div class="hidden md:block">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200">
+                                <th class="text-left py-3 px-4 font-medium text-slate-600">Type de clé</th>
+                                <th class="text-center py-3 px-4 font-medium text-blue-600 bg-blue-50">Photo entrée</th>
+                                <th class="text-center py-3 px-4 font-medium text-blue-600 bg-blue-50">Qté entrée</th>
+                                <th class="text-center py-3 px-4 font-medium text-orange-600 bg-orange-50">Photo sortie</th>
+                                <th class="text-center py-3 px-4 font-medium text-orange-600 bg-orange-50">Qté sortie</th>
+                                <th class="text-center py-3 px-4 font-medium text-slate-600">Différence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($tousTypesClés as $type)
+                                @php
+                                    $cleEntree = $edlEntree->cles->where('type', $type)->first();
+                                    $cleSortie = $edlSortie->cles->where('type', $type)->first();
+                                    $nbEntree = $cleEntree?->nombre ?? 0;
+                                    $nbSortie = $cleSortie?->nombre ?? 0;
+                                    $difference = $nbSortie - $nbEntree;
+                                @endphp
+                                <tr class="border-b border-slate-100 {{ $difference < 0 ? 'bg-red-50' : '' }}">
+                                    <td class="py-3 px-4 font-medium">🔑 {{ $type }}</td>
+                                    <td class="py-3 px-4 text-center bg-blue-50">
+                                        @if ($cleEntree?->photo)
+                                            <a href="{{ $cleEntree->photo_url }}" target="_blank">
+                                                <img src="{{ $cleEntree->photo_url }}" alt="Photo" class="w-10 h-10 object-cover rounded mx-auto border border-slate-200 hover:opacity-80">
+                                            </a>
+                                        @else
+                                            <span class="text-slate-400">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-4 text-center bg-blue-50 font-semibold">{{ $nbEntree > 0 ? $nbEntree : '-' }}</td>
+                                    <td class="py-3 px-4 text-center bg-orange-50">
+                                        @if ($cleSortie?->photo)
+                                            <a href="{{ $cleSortie->photo_url }}" target="_blank">
+                                                <img src="{{ $cleSortie->photo_url }}" alt="Photo" class="w-10 h-10 object-cover rounded mx-auto border border-slate-200 hover:opacity-80">
+                                            </a>
+                                        @else
+                                            <span class="text-slate-400">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-4 text-center bg-orange-50 font-semibold">{{ $nbSortie > 0 ? $nbSortie : '-' }}</td>
+                                    <td class="py-3 px-4 text-center">
+                                        @if ($difference < 0)
+                                            <span class="inline-flex items-center gap-1 text-red-600 font-bold">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                </svg>
+                                                {{ $difference }}
+                                            </span>
+                                        @elseif($difference > 0)
+                                            <span class="text-green-600 font-bold">+{{ $difference }}</span>
+                                        @else
+                                            <span class="text-slate-400">=</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-slate-50 font-semibold">
+                                <td class="py-3 px-4">Total</td>
+                                <td class="py-3 px-4 bg-blue-100"></td>
+                                <td class="py-3 px-4 text-center bg-blue-100">{{ $totalEntree }}</td>
+                                <td class="py-3 px-4 bg-orange-100"></td>
+                                <td class="py-3 px-4 text-center bg-orange-100">{{ $totalSortie }}</td>
                                 <td class="py-3 px-4 text-center">
-                                    @if ($difference < 0)
-                                        <span class="inline-flex items-center gap-1 text-red-600 font-bold">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                            </svg>
-                                            {{ $difference }}
-                                        </span>
-                                    @elseif($difference > 0)
-                                        <span class="text-green-600 font-bold">+{{ $difference }}</span>
+                                    @if ($differenceTotal < 0)
+                                        <span class="text-red-600 font-bold">{{ $differenceTotal }} manquante(s)</span>
+                                    @elseif($differenceTotal > 0)
+                                        <span class="text-green-600">+{{ $differenceTotal }}</span>
                                     @else
-                                        <span class="text-slate-400">=</span>
+                                        <span class="text-green-600">✓ Complet</span>
                                     @endif
                                 </td>
                             </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot>
-                        <tr class="bg-slate-50 font-semibold">
-                            <td class="py-3 px-4">Total</td>
-                            <td class="py-3 px-4 bg-blue-100"></td>
-                            <td class="py-3 px-4 text-center bg-blue-100">{{ $totalEntree }}</td>
-                            <td class="py-3 px-4 bg-orange-100"></td>
-                            <td class="py-3 px-4 text-center bg-orange-100">{{ $totalSortie }}</td>
-                            <td class="py-3 px-4 text-center">
-                                @if ($differenceTotal < 0)
-                                    <span class="text-red-600 font-bold">{{ $differenceTotal }} manquante(s)</span>
-                                @elseif($differenceTotal > 0)
-                                    <span class="text-green-600">+{{ $differenceTotal }}</span>
-                                @else
-                                    <span class="text-green-600">✓ Complet</span>
-                                @endif
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
+                        </tfoot>
+                    </table>
+                </div>
 
                 @if ($differenceTotal < 0)
                     <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -290,22 +384,22 @@
                     @foreach ($pieceData['elements'] as $element)
                         @if ($element['status'] === 'degrade')
                             <div class="bg-white rounded-lg px-4 py-3">
-                                <div class="flex items-center justify-between mb-3">
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                                     <div>
                                         <span class="font-medium text-slate-800">{{ $element['sortie']->nom }}</span>
-                                        <span class="text-slate-500">dans {{ $pieceData['nom'] }}</span>
+                                        <span class="text-slate-500 text-sm">dans {{ $pieceData['nom'] }}</span>
                                     </div>
-                                    <div class="flex items-center gap-3 text-sm">
-                                        <span class="px-2 py-1 rounded-full {{ $element['entree']->etat_couleur }}">{{ $element['entree']->etat_libelle }}</span>
-                                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="flex items-center gap-2 sm:gap-3 text-sm">
+                                        <span class="px-2 py-1 rounded-full text-xs {{ $element['entree']->etat_couleur }}">{{ $element['entree']->etat_libelle }}</span>
+                                        <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                         </svg>
-                                        <span class="px-2 py-1 rounded-full {{ $element['sortie']->etat_couleur }}">{{ $element['sortie']->etat_libelle }}</span>
+                                        <span class="px-2 py-1 rounded-full text-xs {{ $element['sortie']->etat_couleur }}">{{ $element['sortie']->etat_libelle }}</span>
                                     </div>
                                 </div>
                                 
                                 {{-- Comparatif dégradations entrée vs sortie --}}
-                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                                     <div class="bg-blue-50 rounded-lg p-3">
                                         <p class="text-xs text-blue-600 font-medium mb-2">Dégradations à l'entrée</p>
                                         @if($element['entree']->hasDegradations())
@@ -372,52 +466,56 @@
                 </h3>
             </div>
 
-            <div class="p-6 overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="border-b border-slate-200">
-                            <th class="text-left py-3 px-3 font-medium text-slate-600">Élément</th>
-                            <th class="text-center py-3 px-3 font-medium text-blue-600 bg-blue-50">État entrée</th>
-                            <th class="text-left py-3 px-3 font-medium text-blue-600 bg-blue-50">Dégradations entrée</th>
-                            <th class="text-center py-3 px-3 font-medium text-orange-600 bg-orange-50">État sortie</th>
-                            <th class="text-left py-3 px-3 font-medium text-orange-600 bg-orange-50">Dégradations sortie</th>
-                            <th class="text-center py-3 px-3 font-medium text-slate-600">Évolution</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($pieceData['elements'] as $element)
-                            <tr class="border-b border-slate-100 {{ $element['status'] === 'degrade' ? 'bg-red-50' : '' }}">
-                                <td class="py-3 px-3 font-medium text-slate-800">{{ $element['sortie']->nom }}</td>
-                                <td class="py-3 px-3 text-center bg-blue-50">
+            <div class="p-4 sm:p-6">
+                {{-- Vue mobile : Cards --}}
+                <div class="md:hidden space-y-3">
+                    @foreach ($pieceData['elements'] as $element)
+                        <div class="rounded-lg p-4 {{ $element['status'] === 'degrade' ? 'bg-red-50 border border-red-200' : 'bg-slate-50' }}">
+                            <div class="flex items-start justify-between gap-3 mb-3">
+                                <span class="font-medium text-slate-800">{{ $element['sortie']->nom }}</span>
+                                @if ($element['status'] === 'degrade')
+                                    <span class="inline-flex items-center gap-1 text-red-600 font-medium text-xs">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                        </svg>
+                                        Dégradé
+                                    </span>
+                                @elseif($element['status'] === 'ameliore')
+                                    <span class="inline-flex items-center gap-1 text-green-600 font-medium text-xs">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                                        </svg>
+                                        Amélioré
+                                    </span>
+                                @elseif($element['status'] === 'nouveau')
+                                    <span class="text-blue-600 font-medium text-xs">Nouveau</span>
+                                @endif
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div class="bg-blue-50 rounded p-3">
+                                    <p class="text-xs text-blue-600 mb-2">Entrée</p>
                                     @if ($element['entree'])
                                         <span class="px-2 py-1 text-xs rounded-full {{ $element['entree']->etat_couleur }}">
                                             {{ $element['entree']->etat_libelle }}
                                         </span>
+                                        @if ($element['entree']->hasDegradations())
+                                            <div class="flex flex-wrap gap-1 mt-2">
+                                                @foreach($element['entree']->degradations as $degradation)
+                                                    <span class="inline-block px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">{{ $degradation }}</span>
+                                                @endforeach
+                                            </div>
+                                        @endif
                                     @else
                                         <span class="text-slate-400">-</span>
                                     @endif
-                                </td>
-                                <td class="py-3 px-3 bg-blue-50">
-                                    @if ($element['entree'] && $element['entree']->hasDegradations())
-                                        <div class="flex flex-wrap gap-1">
-                                            @foreach($element['entree']->degradations as $degradation)
-                                                <span class="inline-block px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">
-                                                    {{ $degradation }}
-                                                </span>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <span class="text-slate-400">-</span>
-                                    @endif
-                                </td>
-                                <td class="py-3 px-3 text-center bg-orange-50">
+                                </div>
+                                <div class="bg-orange-50 rounded p-3">
+                                    <p class="text-xs text-orange-600 mb-2">Sortie</p>
                                     <span class="px-2 py-1 text-xs rounded-full {{ $element['sortie']->etat_couleur }}">
                                         {{ $element['sortie']->etat_libelle }}
                                     </span>
-                                </td>
-                                <td class="py-3 px-3 bg-orange-50">
                                     @if($element['sortie']->hasDegradations())
-                                        <div class="flex flex-wrap gap-1">
+                                        <div class="flex flex-wrap gap-1 mt-2">
                                             @foreach($element['sortie']->degradations as $degradation)
                                                 @php
                                                     $isNew = !$element['entree'] || !$element['entree']->hasDegradations() || !in_array($degradation, $element['entree']->degradations ?? []);
@@ -427,37 +525,97 @@
                                                 </span>
                                             @endforeach
                                         </div>
-                                    @else
-                                        <span class="text-slate-400">-</span>
                                     @endif
-                                </td>
-                                <td class="py-3 px-3 text-center">
-                                    @if ($element['status'] === 'degrade')
-                                        <span class="inline-flex items-center gap-1 text-red-600 font-medium">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                                            </svg>
-                                            Dégradé
-                                        </span>
-                                    @elseif($element['status'] === 'ameliore')
-                                        <span class="inline-flex items-center gap-1 text-green-600 font-medium">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                                            </svg>
-                                            Amélioré
-                                        </span>
-                                    @elseif($element['status'] === 'nouveau')
-                                        <span class="text-blue-600 font-medium">Nouveau</span>
-                                    @else
-                                        <span class="text-slate-400">=</span>
-                                    @endif
-                                </td>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- Vue desktop : Table --}}
+                <div class="hidden md:block overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200">
+                                <th class="text-left py-3 px-3 font-medium text-slate-600">Élément</th>
+                                <th class="text-center py-3 px-3 font-medium text-blue-600 bg-blue-50">État entrée</th>
+                                <th class="text-left py-3 px-3 font-medium text-blue-600 bg-blue-50">Dégradations entrée</th>
+                                <th class="text-center py-3 px-3 font-medium text-orange-600 bg-orange-50">État sortie</th>
+                                <th class="text-left py-3 px-3 font-medium text-orange-600 bg-orange-50">Dégradations sortie</th>
+                                <th class="text-center py-3 px-3 font-medium text-slate-600">Évolution</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach ($pieceData['elements'] as $element)
+                                <tr class="border-b border-slate-100 {{ $element['status'] === 'degrade' ? 'bg-red-50' : '' }}">
+                                    <td class="py-3 px-3 font-medium text-slate-800">{{ $element['sortie']->nom }}</td>
+                                    <td class="py-3 px-3 text-center bg-blue-50">
+                                        @if ($element['entree'])
+                                            <span class="px-2 py-1 text-xs rounded-full {{ $element['entree']->etat_couleur }}">
+                                                {{ $element['entree']->etat_libelle }}
+                                            </span>
+                                        @else
+                                            <span class="text-slate-400">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-3 bg-blue-50">
+                                        @if ($element['entree'] && $element['entree']->hasDegradations())
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach($element['entree']->degradations as $degradation)
+                                                    <span class="inline-block px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">{{ $degradation }}</span>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-slate-400">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-3 text-center bg-orange-50">
+                                        <span class="px-2 py-1 text-xs rounded-full {{ $element['sortie']->etat_couleur }}">
+                                            {{ $element['sortie']->etat_libelle }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3 bg-orange-50">
+                                        @if($element['sortie']->hasDegradations())
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach($element['sortie']->degradations as $degradation)
+                                                    @php
+                                                        $isNew = !$element['entree'] || !$element['entree']->hasDegradations() || !in_array($degradation, $element['entree']->degradations ?? []);
+                                                    @endphp
+                                                    <span class="inline-block px-2 py-0.5 text-xs rounded-full {{ $isNew ? 'bg-red-100 text-red-700 font-semibold' : 'bg-orange-100 text-orange-700' }}">
+                                                        {{ $degradation }}{{ $isNew ? ' ●' : '' }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-slate-400">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-3 text-center">
+                                        @if ($element['status'] === 'degrade')
+                                            <span class="inline-flex items-center gap-1 text-red-600 font-medium">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                                </svg>
+                                                Dégradé
+                                            </span>
+                                        @elseif($element['status'] === 'ameliore')
+                                            <span class="inline-flex items-center gap-1 text-green-600 font-medium">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                                                </svg>
+                                                Amélioré
+                                            </span>
+                                        @elseif($element['status'] === 'nouveau')
+                                            <span class="text-blue-600 font-medium">Nouveau</span>
+                                        @else
+                                            <span class="text-slate-400">=</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     @endforeach

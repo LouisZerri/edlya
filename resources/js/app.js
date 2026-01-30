@@ -8,6 +8,7 @@ import './components/lightbox';
 import './components/navigation';
 import './components/accordion';
 import './components/faq-modal';
+import './components/mobile-drawer';
 
 /*
 |--------------------------------------------------------------------------

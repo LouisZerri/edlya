@@ -178,13 +178,13 @@
                 </div>
 
                 <!-- Actions -->
-                <div class="flex gap-4 mt-8">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-8">
                     <button type="button" id="btn-back"
-                        class="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 cursor-pointer">
+                        class="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 cursor-pointer min-h-[44px]">
                         Recommencer
                     </button>
                     <button type="button" id="btn-import"
-                        class="flex-1 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 cursor-pointer">
+                        class="flex-1 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 cursor-pointer min-h-[44px]">
                         Créer l'état des lieux
                     </button>
                 </div>

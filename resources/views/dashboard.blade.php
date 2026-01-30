@@ -3,20 +3,20 @@
 @section('title', 'Tableau de bord - Edlya')
 
 @section('content')
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 class="text-2xl font-semibold text-slate-800">Tableau de bord</h1>
-       <div class="flex gap-3">
-            <a href="{{ route('etats-des-lieux.import') }}" class="inline-flex items-center px-4 py-2 border border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 transition-colors">
+        <div class="flex flex-col sm:flex-row gap-3">
+            <a href="{{ route('etats-des-lieux.import') }}" class="inline-flex items-center justify-center px-4 py-2 border border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 transition-colors min-h-[44px]">
                 Importer PDF
             </a>
-            <a href="{{ route('etats-des-lieux.create') }}" class="inline-flex items-center bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">
+            <a href="{{ route('etats-des-lieux.create') }}" class="inline-flex items-center justify-center bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors min-h-[44px]">
                 Nouvel état des lieux
             </a>
         </div>
     </div>
 
     {{-- Stats principales --}}
-    <div class="grid gap-6 md:grid-cols-4 mb-8">
+    <div class="grid gap-4 sm:gap-6 grid-cols-2 md:grid-cols-4 mb-8">
         <div class="bg-white p-6 rounded-lg border border-slate-200">
             <h2 class="text-sm font-medium text-slate-500">Logements</h2>
             <p class="text-3xl font-semibold text-slate-800 mt-2">{{ $stats['logements'] }}</p>
