@@ -362,12 +362,8 @@
                             @php
                                 $compteurEntree = $edlEntree->compteurs->where('type', $type)->first();
                                 $compteurSortie = $edlSortie->compteurs->where('type', $type)->first();
-                                $indexEntree = $compteurEntree?->index
-                                    ? (float) preg_replace('/[^0-9.]/', '', $compteurEntree->index)
-                                    : null;
-                                $indexSortie = $compteurSortie?->index
-                                    ? (float) preg_replace('/[^0-9.]/', '', $compteurSortie->index)
-                                    : null;
+                                $indexEntree = $compteurEntree?->index_numerique;
+                                $indexSortie = $compteurSortie?->index_numerique;
                                 $consommation =
                                     $indexEntree !== null && $indexSortie !== null ? $indexSortie - $indexEntree : null;
                             @endphp

@@ -12,6 +12,7 @@ use App\Models\Element;
 use App\Models\Photo;
 use App\Models\Compteur;
 use App\Services\ImportPdfService;
+use App\Services\ImportValidationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -23,7 +24,7 @@ class ImportController extends Controller
         return view('etats-des-lieux.import');
     }
 
-    public function analyze(ImportAnalyzeRequest $request, ImportPdfService $importService)
+    public function analyze(ImportAnalyzeRequest $request, ImportPdfService $importService, ImportValidationService $validationService)
     {
         try {
             $file = $request->file('pdf');
@@ -34,6 +35,9 @@ class ImportController extends Controller
             // Stocker les photos temporaires en session
             $extractedPhotos = $data['_extracted_photos'] ?? [];
             unset($data['_extracted_photos']);
+
+            // Valider et auto-corriger les données extraites
+            $data = $validationService->validate($data, count($extractedPhotos));
 
             session(['imported_photos' => $extractedPhotos]);
 
@@ -200,6 +204,8 @@ class ImportController extends Controller
             }
 
             // Créer les pièces et éléments avec photos
+            // IMPORTANT : traiter les éléments AVANT les photos de pièce
+            // pour éviter que "Vue générale" ne consomme les photos déjà assignées
             if (!empty($data['pieces'])) {
                 foreach ($data['pieces'] as $ordre => $pieceData) {
                     $piece = Piece::create([
@@ -208,43 +214,10 @@ class ImportController extends Controller
                         'ordre' => $ordre + 1,
                     ]);
 
-                    // Sauvegarder les photos générales de la pièce
-                    $piecePhotoIndices = $pieceData['photo_indices'] ?? [];
-                    if (!empty($piecePhotoIndices)) {
-                        $elementGeneral = Element::create([
-                            'piece_id' => $piece->id,
-                            'nom' => 'Vue générale',
-                            'type' => 'autre',
-                            'etat' => 'bon',
-                            'observations' => 'Photos générales de la pièce',
-                        ]);
-
-                        foreach ($piecePhotoIndices as $photoIndex) {
-                            $arrayIndex = $photoIndex - 1;
-
-                            if (isset($extractedPhotos[$arrayIndex]) && empty($extractedPhotos[$arrayIndex]['used'])) {
-                                $tempPhotoPath = $extractedPhotos[$arrayIndex]['path'] ?? null;
-
-                                if ($tempPhotoPath && file_exists($tempPhotoPath)) {
-                                    $filename = 'photos/' . uniqid() . '_imported.png';
-                                    Storage::disk('public')->put($filename, file_get_contents($tempPhotoPath));
-
-                                    Photo::create([
-                                        'element_id' => $elementGeneral->id,
-                                        'chemin' => $filename,
-                                    ]);
-
-                                    $extractedPhotos[$arrayIndex]['used'] = true;
-                                    unlink($tempPhotoPath);
-                                }
-                            }
-                        }
-                    }
-
-                    // Créer les éléments de la pièce
+                    // D'abord : créer les éléments et assigner leurs photos
                     if (!empty($pieceData['elements'])) {
                         foreach ($pieceData['elements'] as $elementOrdre => $elementData) {
-                            $etat = $this->convertEtat($elementData['etat'] ?? 'bon_etat');
+                            $etat = $this->convertEtat($elementData['etat'] ?? 'bon');
 
                             $element = Element::create([
                                 'piece_id' => $piece->id,
@@ -278,6 +251,41 @@ class ImportController extends Controller
                             }
                         }
                     }
+
+                    // Ensuite : photos générales de la pièce (seulement celles non déjà utilisées par un élément)
+                    $piecePhotoIndices = $pieceData['photo_indices'] ?? [];
+                    $remainingPiecePhotos = array_filter($piecePhotoIndices, function ($photoIndex) use ($extractedPhotos) {
+                        $arrayIndex = $photoIndex - 1;
+                        return isset($extractedPhotos[$arrayIndex]) && empty($extractedPhotos[$arrayIndex]['used']);
+                    });
+
+                    if (!empty($remainingPiecePhotos)) {
+                        $elementGeneral = Element::create([
+                            'piece_id' => $piece->id,
+                            'nom' => 'Vue générale',
+                            'type' => 'autre',
+                            'etat' => 'bon',
+                            'observations' => 'Photos générales de la pièce',
+                        ]);
+
+                        foreach ($remainingPiecePhotos as $photoIndex) {
+                            $arrayIndex = $photoIndex - 1;
+                            $tempPhotoPath = $extractedPhotos[$arrayIndex]['path'] ?? null;
+
+                            if ($tempPhotoPath && file_exists($tempPhotoPath)) {
+                                $filename = 'photos/' . uniqid() . '_imported.png';
+                                Storage::disk('public')->put($filename, file_get_contents($tempPhotoPath));
+
+                                Photo::create([
+                                    'element_id' => $elementGeneral->id,
+                                    'chemin' => $filename,
+                                ]);
+
+                                $extractedPhotos[$arrayIndex]['used'] = true;
+                                unlink($tempPhotoPath);
+                            }
+                        }
+                    }
                 }
             }
 
@@ -306,19 +314,21 @@ class ImportController extends Controller
 
     /**
      * Convertir l'état du format IA vers le format BDD
+     * L'IA produit désormais les 6 états BDD directement, mais on garde un fallback de sécurité
      */
     private function convertEtat(string $etat): string
     {
+        $validEtats = ['neuf', 'tres_bon', 'bon', 'usage', 'mauvais', 'hors_service'];
+
+        if (in_array($etat, $validEtats)) {
+            return $etat;
+        }
+
+        // Fallback legacy (au cas où la validation n'est pas passée)
         $mapping = [
-            'neuf' => 'neuf',
-            'bon_etat' => 'tres_bon',
-            'tres_bon' => 'tres_bon',
-            'bon' => 'bon',
+            'bon_etat' => 'bon',
             'etat_moyen' => 'usage',
-            'usage' => 'usage',
             'mauvais_etat' => 'mauvais',
-            'mauvais' => 'mauvais',
-            'hors_service' => 'hors_service',
         ];
 
         return $mapping[$etat] ?? 'bon';

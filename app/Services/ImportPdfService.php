@@ -10,11 +10,15 @@ class ImportPdfService
 {
     private ?string $apiKey = null;
     private string $model;
+    private int $maxTokens;
+    private int $timeout;
 
     public function __construct()
     {
         $this->apiKey = config('anthropic.api_key');
         $this->model = config('anthropic.model', 'claude-sonnet-4-20250514');
+        $this->maxTokens = config('anthropic.max_tokens', 16000);
+        $this->timeout = config('anthropic.timeout', 180);
     }
 
     /**
@@ -49,8 +53,165 @@ class ImportPdfService
             ], $extractedPhotos),
         ]);
 
-        $prompt = $this->buildExtractionPrompt(count($extractedPhotos));
+        // Détecter le logiciel source
+        $sourceFormat = $this->detectSourceFormat($pdfPath);
+        if ($sourceFormat) {
+            Log::info('Import PDF - Format source détecté', ['format' => $sourceFormat]);
+        }
 
+        // Construire les messages
+        $systemMessage = $this->buildSystemMessage(count($extractedPhotos));
+        $userContent = $this->buildUserContent($images, count($extractedPhotos), $sourceFormat);
+
+        // Appel API avec retry
+        $data = $this->callClaudeApiWithRetry($systemMessage, $userContent);
+
+        // Nettoyer les images de pages temporaires
+        foreach ($images as $imagePath) {
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+            }
+        }
+
+        // Log spécifique pour les compteurs
+        Log::info('Import PDF - Compteurs extraits par IA', [
+            'compteurs' => $data['compteurs'] ?? 'NON TROUVÉ',
+        ]);
+
+        // Ajouter les photos extraites aux données
+        $data['_extracted_photos'] = $extractedPhotos;
+
+        return $data;
+    }
+
+    /**
+     * Détecter le logiciel source du PDF via pdftotext
+     */
+    private function detectSourceFormat(string $pdfPath): ?string
+    {
+        $command = sprintf('pdftotext -l 2 %s - 2>/dev/null', escapeshellarg($pdfPath));
+        $output = shell_exec($command);
+
+        if (!$output) {
+            return null;
+        }
+
+        $output = mb_strtolower($output);
+
+        $formats = [
+            'homepad' => 'Homepad',
+            'immopad' => 'Immopad',
+            'startloc' => 'Startloc',
+            'edlsoft' => 'EDLSoft',
+            'chapps' => 'Chapps',
+            'clic & go' => 'Clic & Go',
+            'onedl' => 'OneDL',
+            'check & visit' => 'Check & Visit',
+            'igloo' => 'Igloo',
+        ];
+
+        foreach ($formats as $keyword => $name) {
+            if (str_contains($output, $keyword)) {
+                return $name;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Appel API Claude avec retry (max 2 tentatives)
+     */
+    private function callClaudeApiWithRetry(string $systemMessage, array $userContent): array
+    {
+        $data = null;
+        $lastError = null;
+
+        for ($attempt = 1; $attempt <= 2; $attempt++) {
+            try {
+                $messages = [
+                    ['role' => 'user', 'content' => $userContent],
+                ];
+
+                // En cas de retry, ajouter un message de relance
+                if ($attempt > 1) {
+                    Log::warning('Import PDF - Retry tentative ' . $attempt, ['error' => $lastError]);
+                    $messages[] = [
+                        'role' => 'assistant',
+                        'content' => "Je vais réessayer l'extraction en produisant un JSON complet et valide.",
+                    ];
+                    $messages[] = [
+                        'role' => 'user',
+                        'content' => "La réponse précédente était invalide ({$lastError}). Produis un JSON complet et valide. Assure-toi que toutes les pièces et éléments sont inclus, et que le JSON se termine correctement avec toutes les accolades/crochets fermants.",
+                    ];
+                }
+
+                $textContent = $this->callClaudeApi($systemMessage, $messages);
+                $data = $this->parseJsonResponse($textContent);
+
+                // Vérifier que le résultat est complet
+                if (empty($data['pieces']) && empty($data['logement'])) {
+                    throw new \Exception('JSON incomplet: pas de pièces ni de logement');
+                }
+
+                Log::info('Import PDF - Extraction réussie', ['attempt' => $attempt]);
+                return $data;
+
+            } catch (\Exception $e) {
+                $lastError = $e->getMessage();
+                Log::warning('Import PDF - Tentative ' . $attempt . ' échouée', ['error' => $lastError]);
+
+                if ($attempt >= 2) {
+                    throw $e;
+                }
+            }
+        }
+
+        throw new \Exception('Échec de l\'extraction après 2 tentatives: ' . $lastError);
+    }
+
+    /**
+     * Appel brut à l'API Claude
+     */
+    private function callClaudeApi(string $systemMessage, array $messages): string
+    {
+        /** @var \Illuminate\Http\Client\Response $response */
+        $response = Http::withHeaders([
+            'x-api-key' => $this->apiKey,
+            'anthropic-version' => '2023-06-01',
+            'Content-Type' => 'application/json',
+        ])->timeout($this->timeout)->post('https://api.anthropic.com/v1/messages', [
+            'model' => $this->model,
+            'max_tokens' => $this->maxTokens,
+            'system' => $systemMessage,
+            'messages' => $messages,
+        ]);
+
+        if (!$response->successful()) {
+            throw new \Exception('Erreur API Anthropic: ' . $response->body());
+        }
+
+        $result = $response->json();
+        $textContent = $result['content'][0]['text'] ?? '';
+
+        Log::info('Import PDF - Réponse IA brute', [
+            'response_length' => strlen($textContent),
+            'stop_reason' => $result['stop_reason'] ?? 'unknown',
+        ]);
+
+        // Vérifier si la réponse a été tronquée
+        if (($result['stop_reason'] ?? '') === 'max_tokens') {
+            Log::warning('Import PDF - Réponse tronquée (max_tokens atteint)');
+        }
+
+        return $textContent;
+    }
+
+    /**
+     * Construire le contenu du message user (images + instruction courte)
+     */
+    private function buildUserContent(array $images, int $photoCount, ?string $sourceFormat): array
+    {
         $content = [];
 
         foreach ($images as $imagePath) {
@@ -65,54 +226,205 @@ class ImportPdfService
             ];
         }
 
+        $instruction = "Analyse ce PDF d'état des lieux et extrais toutes les données au format JSON selon le schéma défini.";
+
+        if ($sourceFormat) {
+            $instruction .= "\nCe document provient du logiciel {$sourceFormat}.";
+        }
+
+        if ($photoCount > 0) {
+            $instruction .= "\n{$photoCount} photos ont été extraites du PDF (numérotées de 1 à {$photoCount}). Associe chaque photo au bon élément, compteur ou clé via photo_indices.";
+        }
+
         $content[] = [
             'type' => 'text',
-            'text' => $prompt,
+            'text' => $instruction,
         ];
 
-        /** @var \Illuminate\Http\Client\Response $response */
-        $response = Http::withHeaders([
-            'x-api-key' => $this->apiKey,
-            'anthropic-version' => '2023-06-01',
-            'Content-Type' => 'application/json',
-        ])->timeout(120)->post('https://api.anthropic.com/v1/messages', [
-            'model' => $this->model,
-            'max_tokens' => 8000,
-            'messages' => [
-                [
-                    'role' => 'user',
-                    'content' => $content,
+        return $content;
+    }
+
+    /**
+     * Construire le system message avec persona, schéma, règles et few-shot examples
+     */
+    private function buildSystemMessage(int $photoCount = 0): string
+    {
+        return <<<'SYSTEM'
+            Tu es un expert en extraction de données depuis des PDF d'états des lieux immobiliers français.
+            Tu dois analyser chaque page du document et produire un JSON structuré complet.
+
+            ═══════════════════════════════════════════
+            SCHÉMA JSON À PRODUIRE
+            ═══════════════════════════════════════════
+
+            Retourne UNIQUEMENT un objet JSON valide (sans ```json, sans commentaires) :
+
+            {
+                "type": "entree" ou "sortie",
+                "date_realisation": "YYYY-MM-DD",
+                "logement": {
+                    "nom": "Type du bien (Appartement T3, Studio meublé, Maison, etc.)",
+                    "adresse": "Numéro et rue UNIQUEMENT - SANS code postal ni ville",
+                    "code_postal": "Code postal (ex: 33480)",
+                    "ville": "Nom de la ville",
+                    "type_bien": "appartement" ou "maison" ou "studio",
+                    "surface": nombre en m² ou null,
+                    "nombre_pieces": nombre ou null
+                },
+                "locataire": {
+                    "nom": "Prénom et Nom du locataire",
+                    "email": "email ou null",
+                    "telephone": "numéro ou null"
+                },
+                "bailleur": {
+                    "nom": "Nom du bailleur/propriétaire/agence",
+                    "adresse": "adresse ou null"
+                },
+                "pieces": [
+                    {
+                        "nom": "Nom exact de la pièce",
+                        "observations": "Observations générales ou null",
+                        "photo_indices": [],
+                        "elements": [
+                            {
+                                "nom": "Nom exact de l'élément",
+                                "type": "sol|mur|plafond|menuiserie|electricite|plomberie|chauffage|equipement|mobilier|electromenager|autre",
+                                "etat": "neuf|tres_bon|bon|usage|mauvais|hors_service",
+                                "observations": "COPIER MOT POUR MOT",
+                                "photo_indices": []
+                            }
+                        ]
+                    }
                 ],
-            ],
-        ]);
-
-        // Nettoyer les images de pages temporaires
-        foreach ($images as $imagePath) {
-            if (file_exists($imagePath)) {
-                unlink($imagePath);
+                "compteurs": {
+                    "electricite": {"numero": null, "index": null, "commentaire": null, "photo_indices": []},
+                    "gaz": {"numero": null, "index": null, "commentaire": null, "photo_indices": []},
+                    "eau_froide": {"numero": null, "index": null, "commentaire": null, "photo_indices": []},
+                    "eau_chaude": {"numero": null, "index": null, "commentaire": null, "photo_indices": []}
+                },
+                "cles": [
+                    {"type": "Porte d'entrée", "nombre": 2, "commentaire": null, "photo_indices": []}
+                ],
+                "observations_generales": "Observations générales ou null"
             }
-        }
 
-        if (!$response->successful()) {
-            throw new \Exception('Erreur API Anthropic: ' . $response->body());
-        }
+            ═══════════════════════════════════════════
+            ÉTATS : 6 NIVEAUX (très important)
+            ═══════════════════════════════════════════
 
-        $result = $response->json();
-        $textContent = $result['content'][0]['text'] ?? '';
+            Utilise EXACTEMENT ces 6 valeurs pour le champ "etat" :
+            - "neuf" → Neuf, N, Excellent, Parfait état, état neuf
+            - "tres_bon" → Très bon état, TB, TBE, Très bon, Bon état d'entretien
+            - "bon" → Bon état, Bon, B, BE, Correct, Normal, RAS, Satisfaisant, État d'usage normal
+            - "usage" → Usagé, U, Usure, Usage normal, Traces d'usure, État moyen, Passable, État d'usage
+            - "mauvais" → Mauvais, M, ME, Mauvais état, Dégradé, Abîmé, Détérioré, Vétuste
+            - "hors_service" → Hors service, HS, À remplacer, Hors d'usage, Non fonctionnel, Cassé
 
-        Log::info('Import PDF - Réponse IA brute', ['response' => $textContent]);
+            Formats spéciaux courants dans les logiciels EDL :
+            - Cases à cocher ☑/☐ avec colonnes N/B/U/M → N=neuf, B=bon, U=usage, M=mauvais
+            - Échelle 1-4 : 1=neuf, 2=bon, 3=usage, 4=mauvais
+            - Échelle 1-6 : 1=neuf, 2=tres_bon, 3=bon, 4=usage, 5=mauvais, 6=hors_service
+            - Si aucun état n'est indiqué → "bon"
 
-        $data = $this->parseJsonResponse($textContent);
+            ═══════════════════════════════════════════
+            TYPES D'ÉLÉMENTS
+            ═══════════════════════════════════════════
 
-        // Log spécifique pour les compteurs
-        Log::info('Import PDF - Compteurs extraits par IA', [
-            'compteurs' => $data['compteurs'] ?? 'NON TROUVÉ',
-        ]);
+            - sol : parquet, carrelage, moquette, lino, vinyl, tomette, stratifié
+            - mur : murs, peinture, papier peint, crépi, faïence murale, lambris
+            - plafond : plafond, faux plafond, corniche
+            - menuiserie : fenêtre, porte, volet, placard, porte-fenêtre, store, vitrage, serrure, poignée
+            - electricite : prises, interrupteurs, luminaires, tableau électrique, spots, appliques, détecteur de fumée
+            - plomberie : lavabo, douche, baignoire, WC, robinet, évier, siphon, tuyauterie, chasse d'eau, mitigeur
+            - chauffage : radiateur, chaudière, convecteur, thermostat, climatisation, VMC, sèche-serviettes
+            - equipement : plan de travail, hotte, plaques, four, crédence, étagères, miroir, barre de seuil
+            - mobilier : lit, table, chaise, canapé, armoire, commode, bureau, bibliothèque
+            - electromenager : réfrigérateur, lave-linge, lave-vaisselle, micro-ondes, sèche-linge, congélateur
+            - autre : tout ce qui ne rentre pas dans les catégories ci-dessus
 
-        // Ajouter les photos extraites aux données
-        $data['_extracted_photos'] = $extractedPhotos;
+            ═══════════════════════════════════════════
+            RÈGLES D'EXTRACTION
+            ═══════════════════════════════════════════
 
-        return $data;
+            1. Lis CHAQUE PAGE du document attentivement
+            2. Extrais TOUTES les observations mot pour mot - ne résume JAMAIS
+            3. Si un élément a une observation ("RAS", "OK", "Bon état", etc.), elle DOIT apparaître
+            4. Cherche les observations dans les colonnes : Observations, Remarques, Commentaires, Description, État
+            5. ADRESSE : sépare toujours numéro+rue / code postal / ville
+            6. COMPTEURS :
+            - Numéro = N°, matricule, PDL, PCE, référence
+            - Index = relevé, consommation. Si "non relevé" → null
+            - "EAU" sans précision = eau_froide
+            - Index composite → format texte : "HP : 7548 kWh, HC : 9808 kWh"
+            7. CLÉS : section "REMISE/RESTITUTION DES CLÉS" → type + nombre + commentaire
+            8. PHOTOS : associe les "Photo X" mentionnées dans le texte aux bons éléments via photo_indices
+            9. Si un tableau est coupé entre 2 pages, FUSIONNER les données dans la même pièce
+            10. DATE : toujours en format YYYY-MM-DD
+
+            ═══════════════════════════════════════════
+            FORMATS DE LOGICIELS CONNUS
+            ═══════════════════════════════════════════
+
+            Homepad/Immopad : Tableaux avec colonnes Désignation | Nature/Type | État | Observations. Photos légendées en bas de page.
+            Startloc : Cases à cocher ☑ pour l'état (N/B/U/M). Observations dans colonne séparée.
+            EDLSoft : Format texte structuré avec états entre parenthèses. Compteurs en fin de document.
+            Chapps/OneDL : Format mixte tableau + texte libre.
+
+            ═══════════════════════════════════════════
+            EXEMPLES (few-shot)
+            ═══════════════════════════════════════════
+
+            --- Exemple 1 : Format tableau classique ---
+            Entrée (extrait de tableau) :
+            | Désignation | Nature | État | Observations |
+            |-------------|--------|------|-------------|
+            | Sol | Carrelage | Bon état | RAS |
+            | Murs | Peinture blanche | Traces d'usure | Traces au-dessus radiateur |
+            | Plafond | Peinture | Bon | - |
+            | Porte | Bois | Bon état | Poignée légèrement rayée |
+
+            Sortie attendue (extrait) :
+            {"nom": "Sol", "type": "sol", "etat": "bon", "observations": "RAS", "photo_indices": []},
+            {"nom": "Murs", "type": "mur", "etat": "usage", "observations": "Traces au-dessus radiateur", "photo_indices": []},
+            {"nom": "Plafond", "type": "plafond", "etat": "bon", "observations": null, "photo_indices": []},
+            {"nom": "Porte", "type": "menuiserie", "etat": "bon", "observations": "Poignée légèrement rayée", "photo_indices": []}
+
+            --- Exemple 2 : Format cases à cocher ---
+            Entrée (extrait) :
+            Élément          | N | B | U | M | Observations
+            Parquet          |   | ☑ |   |   | Quelques rayures superficielles
+            Peinture murs    |   |   | ☑ |   | Traces de fixation, trous de chevilles
+            Fenêtre PVC      | ☑ |   |   |   |
+            Prises électriques|   | ☑ |   |   | 4 prises dont 1 sans cache
+
+            Sortie attendue (extrait) :
+            {"nom": "Parquet", "type": "sol", "etat": "bon", "observations": "Quelques rayures superficielles", "photo_indices": []},
+            {"nom": "Peinture murs", "type": "mur", "etat": "usage", "observations": "Traces de fixation, trous de chevilles", "photo_indices": []},
+            {"nom": "Fenêtre PVC", "type": "menuiserie", "etat": "neuf", "observations": null, "photo_indices": []},
+            {"nom": "Prises électriques", "type": "electricite", "etat": "bon", "observations": "4 prises dont 1 sans cache", "photo_indices": []}
+
+            --- Exemple 3 : Compteurs avec index composites ---
+            Entrée (extrait) :
+            COMPTEURS ET RELEVÉS
+            Électricité - PDL : 16174095495231
+            Index HP : 7 548 kWh / HC : 9 808 kWh
+            Photos : Photo 1, Photo 2
+            Eau froide - N° 532253812029817D
+            Index : non relevé
+            Observation : Compteur situé en sous-sol. Photo 3
+
+            Sortie attendue (extrait) :
+            "compteurs": {
+                "electricite": {"numero": "16174095495231", "index": "HP : 7548 kWh, HC : 9808 kWh", "commentaire": null, "photo_indices": [1, 2]},
+                "eau_froide": {"numero": "532253812029817D", "index": null, "commentaire": "Compteur situé en sous-sol.", "photo_indices": [3]},
+                "gaz": {"numero": null, "index": null, "commentaire": null, "photo_indices": []},
+                "eau_chaude": {"numero": null, "index": null, "commentaire": null, "photo_indices": []}
+            }
+
+            ═══════════════════════════════════════════
+
+            IMPORTANT : Produis un JSON COMPLET et VALIDE. Ne tronque jamais la réponse. Assure-toi que toutes les accolades et crochets sont correctement fermés.
+        SYSTEM;
     }
 
     /**
@@ -214,7 +526,7 @@ class ImportPdfService
 
         $outputPrefix = $tempDir . '/page';
         $command = sprintf(
-            'pdftoppm -png -r 150 %s %s 2>&1',
+            'pdftoppm -png -r 200 %s %s 2>&1',
             escapeshellarg($pdfPath),
             escapeshellarg($outputPrefix)
         );
@@ -223,7 +535,7 @@ class ImportPdfService
 
         if ($returnCode !== 0) {
             $command = sprintf(
-                'convert -density 150 %s %s/page-%%03d.png 2>&1',
+                'convert -density 200 %s %s/page-%%03d.png 2>&1',
                 escapeshellarg($pdfPath),
                 escapeshellarg($tempDir)
             );
@@ -234,172 +546,6 @@ class ImportPdfService
         sort($files);
 
         return array_slice($files, 0, 20);
-    }
-
-    private function buildExtractionPrompt(int $photoCount = 0): string
-    {
-        $photoInstruction = '';
-        if ($photoCount > 0) {
-            $photoInstruction = "
-                PHOTOS EXTRAITES : {$photoCount} photos ont été extraites du PDF.
-                - Les photos sont numérotées de 1 à {$photoCount} dans l'ordre où elles apparaissent dans le document.
-                - Cherche les légendes des photos : 'Photo 1 - Eau', 'Photo 2 - Cuisine', 'Compteur électrique', etc.
-                - Associe chaque photo au bon élément, compteur ou clé via photo_indices.";
-        }
-
-        return <<<PROMPT
-            Tu es un expert en analyse de documents immobiliers français. Analyse MINUTIEUSEMENT ce PDF d'état des lieux.
-
-            RÈGLES D'EXTRACTION CRITIQUES :
-            1. Lis CHAQUE PAGE du document attentivement
-            2. Extrait TOUTES les observations, même les plus courtes ("RAS", "OK", "Bon état", etc.)
-            3. Ne résume JAMAIS les observations - copie-les mot pour mot
-            4. Si un élément a une observation, elle DOIT apparaître dans le JSON
-            5. Cherche les observations dans les colonnes "Observations", "Remarques", "Commentaires", "Description"
-
-            CONVERSION DES ÉTATS (très important) :
-            - "Neuf", "Très bon état", "Excellent" → "neuf"
-            - "Bon état", "Bon", "Correct", "RAS" → "bon_etat"  
-            - "État moyen", "Usagé", "Usure normale", "Traces d'usure" → "etat_moyen"
-            - "Mauvais état", "Mauvais", "Dégradé", "Hors service", "À remplacer" → "mauvais_etat"
-
-            TYPES D'ÉLÉMENTS :
-            - Sol : parquet, carrelage, moquette, lino, etc.
-            - Mur : murs, peinture, papier peint, crépi, etc.
-            - Plafond : plafond, faux plafond, etc.
-            - Menuiserie : fenêtre, porte, volet, placard, etc.
-            - Electricite : prises, interrupteurs, luminaires, tableau électrique, etc.
-            - Plomberie : lavabo, douche, baignoire, WC, robinet, évier, etc.
-            - Chauffage : radiateur, chaudière, convecteur, etc.
-            - Equipement : plan de travail, hotte, plaques, four, etc.
-            - Mobilier : lit, table, chaise, canapé, armoire, etc.
-            - Electromenager : réfrigérateur, lave-linge, micro-ondes, etc.
-            - Autre : tout ce qui ne rentre pas dans les catégories ci-dessus
-
-            Retourne UNIQUEMENT un objet JSON valide (sans ```json, sans commentaires) :
-
-            {
-                "type": "entree" ou "sortie",
-                "date_realisation": "YYYY-MM-DD",
-                "logement": {
-                    "nom": "Type du bien (Appartement T3, Studio meublé, Maison, etc.) - PAS l'adresse",
-                    "adresse": "Numéro et rue UNIQUEMENT (ex: 11 rue du Docteur Roux, porte 4) - SANS code postal ni ville",
-                    "code_postal": "Code postal (ex: 33480)",
-                    "ville": "Nom de la ville (ex: Castelnau de Médoc)",
-                    "type_bien": "appartement" ou "maison" ou "studio",
-                    "surface": nombre en m² ou null,
-                    "nombre_pieces": nombre ou null
-                },
-                "locataire": {
-                    "nom": "Prénom et Nom du locataire",
-                    "email": "email@example.com ou null",
-                    "telephone": "numéro ou null"
-                },
-                "bailleur": {
-                    "nom": "Nom du bailleur/propriétaire/agence",
-                    "adresse": "adresse ou null"
-                },
-                "pieces": [
-                    {
-                        "nom": "Nom exact de la pièce tel qu'écrit dans le document",
-                        "observations": "Observations générales de la pièce ou null",
-                        "photo_indices": [6, 7, 8, 9, 10],
-                        "elements": [
-                            {
-                                "nom": "Nom exact de l'élément",
-                                "type": "sol|mur|plafond|menuiserie|electricite|plomberie|chauffage|equipement|mobilier|electromenager|autre",
-                                "etat": "neuf|bon_etat|etat_moyen|mauvais_etat",
-                                "observations": "TOUTES les observations - COPIER MOT POUR MOT",
-                                "photo_indices": [1, 2] ou []
-                            }
-                        ]
-                    }
-                ],
-                "compteurs": {
-                    "electricite": {"numero": "numéro ou null", "index": "relevé ou null", "commentaire": "observations complètes ou null", "photo_indices": []},
-                    "gaz": {"numero": "numéro ou null", "index": "relevé ou null", "commentaire": "observations complètes ou null", "photo_indices": []},
-                    "eau_froide": {"numero": "numéro ou null", "index": "relevé ou null", "commentaire": "observations complètes ou null", "photo_indices": []},
-                    "eau_chaude": {"numero": "numéro ou null", "index": "relevé ou null", "commentaire": "observations complètes ou null", "photo_indices": []}
-                },
-                "cles": [
-                    {"type": "Porte d'entrée", "nombre": 2, "commentaire": "observations ou null", "photo_indices": [21]},
-                    {"type": "Boîte aux lettres", "nombre": 1, "commentaire": null, "photo_indices": [23]}
-                ],
-                "observations_generales": "Toutes les observations générales du document"
-            }
-
-            ADRESSE - TRÈS IMPORTANT :
-            - "adresse" = SEULEMENT le numéro et la rue (ex: "11 rue du Docteur Roux, porte 4")
-            - "code_postal" = SEULEMENT le code postal (ex: "33480")
-            - "ville" = SEULEMENT le nom de la ville (ex: "Castelnau de Médoc")
-            - NE PAS inclure le code postal ou la ville dans le champ "adresse"
-
-            COMPTEURS - TRÈS IMPORTANT :
-            - Extraire le numéro du compteur (N°, numéro, matricule, PDL, PCE, etc.)
-            - Extraire l'index/relevé. Si "non relevé" ou vide → mettre null pour index
-            - Extraire TOUTES les observations mot pour mot dans "commentaire"
-            - Le compteur "EAU" sans précision = eau_froide
-
-            PHOTOS DE COMPTEURS - CRITIQUE :
-            - Cherche les mentions "Photo X" dans les observations des compteurs
-            - Cherche les photos légendées dans le document : "Photo 1 - Eau", "Photo 2 - Electricité", "Compteur électrique", etc.
-            - RÈGLE : Si l'observation d'un compteur contient "Photo 1" ET qu'une photo est légendée "Photo 1 - Eau" ou similaire :
-            → Ajouter 1 dans photo_indices du compteur correspondant
-            - MÊME si le relevé est "non relevé", s'il y a une référence photo, TOUJOURS remplir photo_indices
-            - Un compteur peut avoir PLUSIEURS photos (ex: photo_indices: [1, 2, 3, 4])
-
-            PHOTOS GÉNÉRALES DE PIÈCES - IMPORTANT :
-            - Cherche la mention "Ont été prises les photos suivantes concernant la pièce en général : Photo X Photo Y..."
-            - Ces photos générales doivent aller dans photo_indices au niveau de la PIÈCE (pas des éléments)
-            - Exemple : SALON avec "Photo 6 Photo 7 Photo 8 Photo 9 Photo 10" → piece.photo_indices = [6, 7, 8, 9, 10]
-            - Les photos d'éléments spécifiques (Four, Mur, etc.) vont dans les photo_indices de l'élément concerné
-
-            CLÉS - TRÈS IMPORTANT :
-            - Cherche la section "REMISE DES CLÉS" ou "RESTITUTION DES CLÉS" dans le document
-            - Extrait chaque type de clé avec son nombre
-            - Cherche les mentions "Photo X" dans la colonne observations/commentaires des clés
-            - Si une clé a une photo associée (ex: "Photo 21 - Porte principale"), ajoute l'indice dans photo_indices
-            - Extrait aussi tout commentaire/observation associé à chaque clé
-
-            EXEMPLE COMPTEUR :
-            - Compteur EAU avec numéro "532253812029817D", relevé "non relevé", observation "Compteur N° 4 relevés sur photos Photo 1"
-            - Photo légendée "Photo 1 - Eau" visible dans le document
-            → eau_froide = {
-                "numero": "532253812029817D", 
-                "index": null, 
-                "commentaire": "Compteur N° 4 relevés sur photos Photo 1", 
-                "photo_indices": [1]
-            }
-
-            EXEMPLE COMPTEUR AVEC PLUSIEURS PHOTOS :
-            - Compteur ÉLECTRICITÉ avec photos "Photo 1 Photo 2 Photo 3 Photo 4" dans les observations
-            → electricite = {
-                "numero": "16174095495231",
-                "index": "HP : 7548 kWh, HC : 9808 kWh",
-                "commentaire": null,
-                "photo_indices": [1, 2, 3, 4]
-            }
-
-            EXEMPLE PIÈCE AVEC PHOTOS GÉNÉRALES :
-            - SALON avec "Ont été prises les photos suivantes concernant la pièce en général : Photo 6 Photo 7 Photo 8 Photo 9 Photo 10"
-            → piece = {
-                "nom": "SALON",
-                "observations": null,
-                "photo_indices": [6, 7, 8, 9, 10],
-                "elements": [...]
-            }
-
-            EXEMPLE CLÉS :
-            - "Porte principale" - 2 clés - Photo 40
-            - "Parties communes" - 1 clé - Photo 41
-            → cles = [
-                {"type": "Porte principale", "nombre": 2, "commentaire": null, "photo_indices": [40]},
-                {"type": "Parties communes", "nombre": 1, "commentaire": null, "photo_indices": [41]}
-            ]
-            {$photoInstruction}
-
-            IMPORTANT : Ne laisse AUCUNE observation vide si le document en contient une !
-        PROMPT;
     }
 
     private function parseJsonResponse(string $text): array

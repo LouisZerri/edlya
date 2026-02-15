@@ -55,4 +55,29 @@ class Compteur extends Model
         }
         return array_map(fn($photo) => Storage::url($photo), $this->photos);
     }
+
+    /**
+     * Extrait la valeur numérique totale de l'index du compteur.
+     * Gère les index simples ("1245 m³") et composites ("HP : 7548 kWh, HC : 9808 kWh")
+     * en sommant toutes les valeurs numériques trouvées.
+     */
+    public function getIndexNumeriqueAttribute(): ?float
+    {
+        if (empty($this->index)) {
+            return null;
+        }
+
+        preg_match_all('/(\d+[\s.]?\d*)\s*(?:kWh|m³|m3)?/i', $this->index, $matches);
+
+        if (empty($matches[1])) {
+            return null;
+        }
+
+        $total = 0;
+        foreach ($matches[1] as $value) {
+            $total += (float) str_replace(' ', '', $value);
+        }
+
+        return $total;
+    }
 }
