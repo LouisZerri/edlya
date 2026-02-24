@@ -131,6 +131,8 @@
         @yield('content')
     </main>
 
+    @yield('footer')
+
     {{-- FAQ Modal --}}
     <x-faq-modal />
 

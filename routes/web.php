@@ -28,6 +28,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
+// Pages légales
+Route::view('/politique-de-confidentialite', 'politique-confidentialite')->name('politique-confidentialite');
+
 // Routes publiques pour les partages
 Route::get('p/{token}', [PartageController::class, 'show'])->name('partage.show');
 Route::get('p/{token}/pdf', [PartageController::class, 'pdf'])->name('partage.pdf');

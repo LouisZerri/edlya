@@ -39,4 +39,8 @@
             <a href="{{ route('register') }}" class="text-primary-600 hover:underline">S'inscrire</a>
         </p>
     </div>
+
+    <p class="mt-4 text-center text-xs text-slate-400">
+        <a href="{{ route('politique-confidentialite') }}" class="hover:text-primary-600 transition-colors">Politique de confidentialité</a>
+    </p>
 @endsection

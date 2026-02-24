@@ -114,3 +114,42 @@
         </div>
     @endif
 @endsection
+
+@section('footer')
+    <footer class="border-t border-slate-200 mt-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+
+                {{-- Logo + tagline --}}
+                <div class="flex items-center space-x-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="w-8 h-8">
+                        <path d="M50 10 L88 42 L88 88 L12 88 L12 42 Z" fill="none" stroke="#94a3b8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M6 45 L50 10 L94 45" fill="none" stroke="#94a3b8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <ellipse cx="50" cy="58" rx="20" ry="14" fill="none" stroke="#94a3b8" stroke-width="4"/>
+                        <circle cx="50" cy="58" r="7" fill="#94a3b8"/>
+                    </svg>
+                    <div>
+                        <span class="text-sm font-semibold text-slate-500">Edlya</span>
+                        <span class="block text-xs text-slate-400">Propulsé par GEST'IMMO</span>
+                    </div>
+                </div>
+
+                {{-- Liens --}}
+                <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                    <a href="{{ route('politique-confidentialite') }}" class="text-slate-400 hover:text-primary-600 transition-colors">
+                        Politique de confidentialité
+                    </a>
+                    <a href="mailto:contact@gestimmo-presta.fr" class="text-slate-400 hover:text-primary-600 transition-colors">
+                        Contact
+                    </a>
+                </div>
+
+            </div>
+
+            {{-- Copyright --}}
+            <div class="mt-6 pt-6 border-t border-slate-100 text-xs text-slate-400 text-center sm:text-left">
+                &copy; {{ date('Y') }} GEST'IMMO. Tous droits réservés.
+            </div>
+        </div>
+    </footer>
+@endsection
