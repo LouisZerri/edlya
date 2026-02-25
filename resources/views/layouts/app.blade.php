@@ -13,7 +13,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="bg-slate-50 min-h-screen safe-area-x">
+<body class="bg-slate-50 min-h-screen safe-area-x flex flex-col">
 
     <x-toast />
 
@@ -127,7 +127,7 @@
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 safe-area-bottom">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 safe-area-bottom flex-1 w-full">
         @yield('content')
     </main>
 
