@@ -139,7 +139,7 @@
                     <a href="{{ route('politique-confidentialite') }}" class="text-slate-400 hover:text-primary-600 transition-colors">
                         Politique de confidentialité
                     </a>
-                    <a href="mailto:contact@gestimmo-presta.fr" class="text-slate-400 hover:text-primary-600 transition-colors">
+                    <a href="mailto:contact@edlya.fr" class="text-slate-400 hover:text-primary-600 transition-colors">
                         Contact
                     </a>
                 </div>
