@@ -44,7 +44,7 @@
             <a href="{{ route('logements.edit', $logement) }}" class="inline-flex items-center justify-center bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors min-h-[44px]">
                 Modifier
             </a>
-            <form method="POST" action="{{ route('logements.destroy', $logement) }}" onsubmit="return confirm('Supprimer ce logement ?')">
+            <form method="POST" action="{{ route('logements.destroy', $logement) }}" onsubmit="return confirm('Supprimer ce logement et tous ses états des lieux ?')">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="text-red-600 hover:text-red-700 transition-colors cursor-pointer min-h-[44px] px-4">

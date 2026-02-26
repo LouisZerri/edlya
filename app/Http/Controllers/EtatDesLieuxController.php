@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\EtatDesLieuxRequest;
+use App\Http\Controllers\Traits\DeletesEtatDesLieux;
 use App\Http\Requests\GenererPiecesRequest;
 use App\Models\EtatDesLieux;
 use App\Models\Logement;
@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 
 class EtatDesLieuxController extends Controller
 {
+    use DeletesEtatDesLieux;
     /**
      * Liste des états des lieux
      */
@@ -158,7 +159,7 @@ class EtatDesLieuxController extends Controller
     {
         $this->authorize('delete', $etatDesLieux);
 
-        $etatDesLieux->delete();
+        $this->deleteEdlWithRelations($etatDesLieux);
 
         return redirect()
             ->route('etats-des-lieux.index')

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Traits\DeletesEtatDesLieux;
 use App\Http\Requests\LogementRequest;
 use App\Models\Logement;
 use Illuminate\Http\RedirectResponse;
@@ -10,6 +11,7 @@ use Illuminate\View\View;
 
 class LogementController extends Controller
 {
+    use DeletesEtatDesLieux;
     public function index(): View
     {
         $logements = Logement::where('user_id', Auth::id())->latest()->get();
@@ -62,6 +64,10 @@ class LogementController extends Controller
     public function destroy(Logement $logement): RedirectResponse
     {
         $this->authorizeAccess($logement);
+
+        foreach ($logement->etatsDesLieux as $edl) {
+            $this->deleteEdlWithRelations($edl);
+        }
 
         $logement->delete();
 
