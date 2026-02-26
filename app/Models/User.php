@@ -16,10 +16,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
         'telephone',
-        'entreprise',
-        'roles',
     ];
 
     protected $hidden = [
@@ -31,7 +28,6 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
-            'roles' => 'array',
         ];
     }
 
@@ -40,8 +36,4 @@ class User extends Authenticatable
         return $this->hasMany(Logement::class);
     }
 
-    public function isAdmin(): bool
-    {
-        return $this->role === 'admin';
-    }
 }
