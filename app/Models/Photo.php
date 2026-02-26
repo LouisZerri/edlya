@@ -31,6 +31,10 @@ class Photo extends Model
 
     public function getUrlAttribute(): string
     {
+        if (str_starts_with($this->chemin, '/uploads/')) {
+            return $this->chemin;
+        }
+
         return Storage::url($this->chemin);
     }
 }

@@ -54,6 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'symfony_public_path' => env('SYMFONY_PUBLIC_PATH', base_path('../edlya-mobile/edlya-api/public')),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

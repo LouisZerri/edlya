@@ -200,8 +200,8 @@
                             <p class="text-xs text-slate-500 mt-2">{{ $compteur->commentaire }}</p>
                         @endif
                         @if ($compteur->photo)
-                            <a href="{{ Storage::url($compteur->photo) }}" target="_blank" class="block mt-2">
-                                <img src="{{ Storage::url($compteur->photo) }}" alt="Compteur"
+                            <a href="{{ $compteur->photo_url }}" target="_blank" class="block mt-2">
+                                <img src="{{ $compteur->photo_url }}" alt="Compteur"
                                     class="w-full h-20 object-cover rounded-lg border border-slate-200 hover:opacity-90 transition-opacity">
                             </a>
                         @endif
@@ -228,8 +228,8 @@
                 @foreach ($etatDesLieux->cles as $cle)
                     <div class="flex items-center gap-3 bg-slate-50 rounded-lg p-4">
                         @if ($cle->photo)
-                            <a href="{{ Storage::url($cle->photo) }}" target="_blank" class="flex-shrink-0">
-                                <img src="{{ Storage::url($cle->photo) }}" alt="Photo clé"
+                            <a href="{{ $cle->photo_url }}" target="_blank" class="flex-shrink-0">
+                                <img src="{{ $cle->photo_url }}" alt="Photo clé"
                                     class="w-14 h-14 object-cover rounded-lg border border-slate-200 hover:opacity-90 transition-opacity">
                             </a>
                         @else
@@ -242,7 +242,7 @@
                             </div>
                         @endif
                         <div class="flex-1 min-w-0">
-                            <p class="font-medium text-slate-800">{{ $cle->type }}</p>
+                            <p class="font-medium text-slate-800">{{ $cle->type_label }}</p>
                             @if ($cle->commentaire)
                                 <p class="text-xs text-slate-500 truncate">{{ $cle->commentaire }}</p>
                             @endif
@@ -416,9 +416,9 @@
                                 <h4 class="text-sm font-medium text-slate-700 mb-3">Photos de la pièce</h4>
                                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                                     @foreach ($allPhotos as $index => $photo)
-                                        <a href="{{ Storage::url($photo->chemin) }}" target="_blank"
+                                        <a href="{{ $photo->url }}" target="_blank"
                                             class="group relative block">
-                                            <img src="{{ Storage::url($photo->chemin) }}"
+                                            <img src="{{ $photo->url }}"
                                                 alt="Photo {{ $index + 1 }}"
                                                 class="w-full h-24 object-cover rounded-lg border border-slate-200 group-hover:opacity-90 transition-opacity">
                                             <span

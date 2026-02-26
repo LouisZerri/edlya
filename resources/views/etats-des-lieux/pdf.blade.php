@@ -414,6 +414,20 @@
 </head>
 
 <body>
+    @php
+        /**
+         * Résout le chemin physique d'une photo pour DomPDF.
+         * Gère les chemins Laravel (storage) et Symfony (/uploads/).
+         */
+        function resolvePhotoPath(string $path): string {
+            if (str_starts_with($path, '/uploads/')) {
+                $symfonyPublic = config('app.symfony_public_path', base_path('../edlya-mobile/edlya-api/public'));
+                return $symfonyPublic . $path;
+            }
+            return public_path('storage/' . $path);
+        }
+    @endphp
+
     {{-- Paraphes en bas de chaque page (position fixed = répété sur chaque page) --}}
     @if($etatDesLieux->statut === 'signe' && $etatDesLieux->signature_bailleur && $etatDesLieux->signature_locataire)
         <div class="paraphes-footer">
@@ -599,7 +613,7 @@
                                             <strong>Photo {{ $photo['index'] }} - {{ $photo['label'] }}</strong>
                                             <span>Photo prise lors de l'état des lieux {{ $etatDesLieux->type === 'entree' ? "d'entrée" : 'de sortie' }}</span>
                                         </div>
-                                        <img src="{{ public_path('storage/' . $photo['path']) }}" alt="Photo">
+                                        <img src="{{ resolvePhotoPath($photo['path']) }}" alt="Photo">
                                     </div>
                                 @endforeach
                             </div>
@@ -695,7 +709,7 @@
                                             <strong>Photo {{ $photo['index'] }} - {{ $photo['element'] }}</strong>
                                             <span>Photo prise lors de l'état des lieux {{ $etatDesLieux->type === 'entree' ? "d'entrée" : 'de sortie' }}</span>
                                         </div>
-                                        <img src="{{ public_path('storage/' . $photo['path']) }}" alt="Photo">
+                                        <img src="{{ resolvePhotoPath($photo['path']) }}" alt="Photo">
                                     </div>
                                 @endforeach
                             </div>
@@ -733,7 +747,7 @@
                                 $cleEntree = $edlEntree?->cles->where('type', $cle->type)->first();
                             @endphp
                             <tr>
-                                <td>{{ $cle->type }}</td>
+                                <td>{{ $cle->type_label }}</td>
                                 <td class="center">{{ $cleEntree?->nombre ?? '-' }}</td>
                                 <td class="center">{{ $cle->nombre }}</td>
                                 <td>
@@ -743,7 +757,7 @@
                                         @php
                                             $clePhotos[] = [
                                                 'index' => $globalPhotoIndex,
-                                                'type' => $cle->type,
+                                                'type' => $cle->type_label,
                                                 'path' => $cle->photo,
                                             ];
                                             $globalPhotoIndex++;
@@ -766,7 +780,7 @@
                                             <strong>Photo {{ $photo['index'] }} - {{ $photo['type'] }}</strong>
                                             <span>Photo prise lors de l'état des lieux {{ $etatDesLieux->type === 'entree' ? "d'entrée" : 'de sortie' }}</span>
                                         </div>
-                                        <img src="{{ public_path('storage/' . $photo['path']) }}" alt="Photo">
+                                        <img src="{{ resolvePhotoPath($photo['path']) }}" alt="Photo">
                                     </div>
                                 @endforeach
                             </div>

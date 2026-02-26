@@ -47,7 +47,7 @@ class Compteur extends Model
         if (empty($this->photos)) {
             return null;
         }
-        return Storage::url($this->photos[0]);
+        return self::resolvePhotoUrl($this->photos[0]);
     }
 
     public function getPhotosUrlsAttribute(): array
@@ -55,7 +55,15 @@ class Compteur extends Model
         if (empty($this->photos)) {
             return [];
         }
-        return array_map(fn($photo) => Storage::url($photo), $this->photos);
+        return array_map(fn($photo) => self::resolvePhotoUrl($photo), $this->photos);
+    }
+
+    private static function resolvePhotoUrl(string $path): string
+    {
+        if (str_starts_with($path, '/uploads/')) {
+            return $path;
+        }
+        return Storage::url($path);
     }
 
     /**

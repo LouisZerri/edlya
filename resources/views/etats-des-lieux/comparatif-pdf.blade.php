@@ -420,7 +420,7 @@
                                 $difference = $nbSortie - $nbEntree;
                             @endphp
                             <tr class="{{ $difference < 0 ? 'degradation-row' : '' }}">
-                                <td>{{ $type }}</td>
+                                <td>{{ \App\Models\Cle::getLabelForType($type) }}</td>
                                 <td class="text-center col-entree font-bold">{{ $nbEntree > 0 ? $nbEntree : '-' }}</td>
                                 <td class="text-center col-sortie font-bold">{{ $nbSortie > 0 ? $nbSortie : '-' }}</td>
                                 <td class="text-center font-bold {{ $difference < 0 ? 'text-red' : ($difference > 0 ? 'text-green' : '') }}">

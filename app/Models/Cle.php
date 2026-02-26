@@ -34,7 +34,46 @@ class Cle extends Model
     }
 
     /**
-     * URL de la photo
+     * Mapping snake_case → libellé français
+     */
+    public static function getTypeLabels(): array
+    {
+        return [
+            'porte_entree' => 'Porte d\'entrée',
+            'parties_communes' => 'Parties communes',
+            'boite_lettres' => 'Boîte aux lettres',
+            'cave' => 'Cave',
+            'garage' => 'Garage',
+            'parking' => 'Parking',
+            'local_velo' => 'Local vélo',
+            'portail' => 'Portail',
+            'interphone' => 'Interphone',
+            'badge' => 'Badge',
+            'telecommande' => 'Télécommande',
+            'vigik' => 'Vigik',
+            'digicode' => 'Digicode',
+            'autre' => 'Autre',
+        ];
+    }
+
+    /**
+     * Libellé français du type
+     */
+    public function getTypeLabelAttribute(): string
+    {
+        return self::getLabelForType($this->type);
+    }
+
+    /**
+     * Convertit un type (snake_case ou legacy) en libellé français
+     */
+    public static function getLabelForType(string $type): string
+    {
+        return self::getTypeLabels()[$type] ?? $type;
+    }
+
+    /**
+     * URL de la photo (compatible chemins Laravel et Symfony)
      */
     public function getPhotoUrlAttribute(): ?string
     {
@@ -42,28 +81,10 @@ class Cle extends Model
             return null;
         }
 
-        return Storage::url($this->photo);
-    }
+        if (str_starts_with($this->photo, '/uploads/')) {
+            return $this->photo;
+        }
 
-    /**
-     * Types de clés courants
-     */
-    public static function getTypesCommuns(): array
-    {
-        return [
-            'Porte d\'entrée',
-            'Porte de service',
-            'Boîte aux lettres',
-            'Cave',
-            'Garage',
-            'Portail',
-            'Portillon',
-            'Local vélo',
-            'Local poubelles',
-            'Parties communes',
-            'Parking',
-            'Interphone/Digicode',
-            'Autre',
-        ];
+        return Storage::url($this->photo);
     }
 }

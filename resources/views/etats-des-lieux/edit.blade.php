@@ -412,9 +412,12 @@
                                             <div class="flex-1 grid grid-cols-2 gap-3">
                                                 <div class="col-span-1">
                                                     <label class="block text-xs text-slate-500 mb-1">Type</label>
-                                                    <input type="text" name="type" value="{{ $cle->type }}"
-                                                        class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white min-h-[44px]"
-                                                        placeholder="Type de clé" required>
+                                                    <select name="type" required
+                                                        class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white min-h-[44px]">
+                                                        @foreach (\App\Models\Cle::getTypeLabels() as $value => $label)
+                                                            <option value="{{ $value }}" {{ $cle->type === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                                        @endforeach
+                                                    </select>
                                                 </div>
 
                                                 <div class="col-span-1">
@@ -507,8 +510,8 @@
                                         <select name="type" required
                                             class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white min-h-[44px]">
                                             <option value="">Choisir...</option>
-                                            @foreach (\App\Models\Cle::getTypesCommuns() as $typeCommun)
-                                                <option value="{{ $typeCommun }}">{{ $typeCommun }}</option>
+                                            @foreach (\App\Models\Cle::getTypeLabels() as $value => $label)
+                                                <option value="{{ $value }}">{{ $label }}</option>
                                             @endforeach
                                         </select>
                                     </div>

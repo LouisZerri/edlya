@@ -216,7 +216,7 @@
                         @endphp
                         <div class="rounded-lg p-4 {{ $difference < 0 ? 'bg-red-50 border border-red-200' : 'bg-slate-50' }}">
                             <div class="flex items-center justify-between mb-3">
-                                <span class="font-medium text-slate-800">🔑 {{ $type }}</span>
+                                <span class="font-medium text-slate-800">🔑 {{ \App\Models\Cle::getLabelForType($type) }}</span>
                                 @if ($difference < 0)
                                     <span class="inline-flex items-center gap-1 text-red-600 font-bold text-sm">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -294,7 +294,7 @@
                                     $difference = $nbSortie - $nbEntree;
                                 @endphp
                                 <tr class="border-b border-slate-100 {{ $difference < 0 ? 'bg-red-50' : '' }}">
-                                    <td class="py-3 px-4 font-medium">🔑 {{ $type }}</td>
+                                    <td class="py-3 px-4 font-medium">🔑 {{ \App\Models\Cle::getLabelForType($type) }}</td>
                                     <td class="py-3 px-4 text-center bg-blue-50">
                                         @if ($cleEntree?->photo)
                                             <a href="{{ $cleEntree->photo_url }}" target="_blank">
