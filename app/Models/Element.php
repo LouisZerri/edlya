@@ -11,6 +11,8 @@ class Element extends Model
 {
     use HasFactory;
 
+    protected $table = 'element';
+
     protected $fillable = [
         'piece_id',
         'type',
@@ -18,6 +20,7 @@ class Element extends Model
         'etat',
         'observations',
         'degradations',
+        'ordre',
     ];
 
     protected function casts(): array

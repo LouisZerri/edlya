@@ -371,8 +371,8 @@
                                 <tr>
                                     <td class="font-bold">{{ $label }}</td>
                                     <td style="font-size: 8px;">{{ $compteurEntree?->numero ?? ($compteurSortie?->numero ?? '-') }}</td>
-                                    <td class="text-center col-entree font-bold">{{ $compteurEntree?->index ?? '-' }}</td>
-                                    <td class="text-center col-sortie font-bold">{{ $compteurSortie?->index ?? '-' }}</td>
+                                    <td class="text-center col-entree font-bold">{{ $compteurEntree?->index_value ?? '-' }}</td>
+                                    <td class="text-center col-sortie font-bold">{{ $compteurSortie?->index_value ?? '-' }}</td>
                                     <td class="text-center font-bold">
                                         @if ($consommation !== null)
                                             {{ number_format($consommation, 0, ',', ' ') }} {{ $unites[$type] }}

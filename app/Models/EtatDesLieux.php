@@ -12,7 +12,7 @@ class EtatDesLieux extends Model
 {
     use HasFactory;
 
-    protected $table = 'etats_des_lieux';
+    protected $table = 'etat_des_lieux';
 
     protected $fillable = [
         'logement_id',
@@ -36,6 +36,8 @@ class EtatDesLieux extends Model
         'signature_user_agent',
         'signature_token',
         'signature_token_expire_at',
+        'autres_locataires',
+        'depot_garantie',
     ];
 
     protected function casts(): array
@@ -48,6 +50,8 @@ class EtatDesLieux extends Model
             'code_validation_expire_at' => 'datetime',
             'code_validation_verifie_at' => 'datetime',
             'signature_token_expire_at' => 'datetime',
+            'autres_locataires' => 'array',
+            'depot_garantie' => 'decimal:2',
         ];
     }
 

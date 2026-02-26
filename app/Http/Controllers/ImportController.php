@@ -156,7 +156,7 @@ class ImportController extends Controller
                                 'etat_des_lieux_id' => $etatDesLieux->id,
                                 'type' => $type,
                                 'numero' => $numero,
-                                'index' => $index,
+                                'index_value' => $index,
                                 'commentaire' => $compteurData['commentaire'] ?? null,
                                 'photos' => !empty($photoPaths) ? $photoPaths : null,
                             ]);
@@ -242,6 +242,7 @@ class ImportController extends Controller
                                             Photo::create([
                                                 'element_id' => $element->id,
                                                 'chemin' => $savedPath,
+                                                'ordre' => Photo::where('element_id', $element->id)->max('ordre') + 1,
                                             ]);
 
                                             $extractedPhotos[$arrayIndex]['used'] = true;
@@ -279,6 +280,7 @@ class ImportController extends Controller
                                 Photo::create([
                                     'element_id' => $elementGeneral->id,
                                     'chemin' => $filename,
+                                    'ordre' => Photo::where('element_id', $elementGeneral->id)->max('ordre') + 1,
                                 ]);
 
                                 $extractedPhotos[$arrayIndex]['used'] = true;

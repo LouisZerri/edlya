@@ -15,13 +15,15 @@ class EtatDesLieuxRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'logement_id' => ['required', 'exists:logements,id'],
+            'logement_id' => ['required', 'exists:logement,id'],
             'type' => ['required', 'in:entree,sortie'],
             'date_realisation' => ['required', 'date', 'before_or_equal:today'],
             'locataire_nom' => ['required', 'string', 'min:2', 'max:255'],
             'locataire_email' => ['nullable', 'email', 'max:255'],
             'locataire_telephone' => ['nullable', 'string', 'max:20'],
             'observations_generales' => ['nullable', 'string', 'max:2000'],
+            'autres_locataires' => ['nullable', 'array'],
+            'autres_locataires.*' => ['string', 'max:255'],
         ];
     }
 

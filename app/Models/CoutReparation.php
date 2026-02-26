@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CoutReparation extends Model
 {
-    protected $table = 'couts_reparations';
+    protected $table = 'cout_reparation';
 
     protected $fillable = [
         'type_element',

@@ -69,6 +69,24 @@
                             label="Téléphone"
                             placeholder="Optionnel"
                         />
+
+                        {{-- Autres locataires (colocation) --}}
+                        <div class="col-span-full" id="colocataires-create">
+                            <div id="colocataires-badges-create" class="flex flex-wrap gap-2 mb-2" style="display:none;"></div>
+                            <div id="colocataires-hiddens-create"></div>
+                            <div id="colocataires-input-create" class="flex gap-2" style="display:none;">
+                                <input type="text" id="colocataire-nom-create" placeholder="Nom de l'occupant"
+                                    class="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none">
+                                <button type="button" onclick="addColocataire('create')" class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700">
+                                    Ajouter
+                                </button>
+                            </div>
+                            <button type="button" id="colocataires-toggle-create" onclick="document.getElementById('colocataires-input-create').style.display='flex';this.style.display='none';" class="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 font-medium py-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                                Ajouter un occupant
+                            </button>
+                            <p id="colocataires-hint-create" class="text-xs text-slate-400 mt-1" style="display:none;">Le locataire principal signe pour tous</p>
+                        </div>
                     </div>
 
                     <div class="mb-4">
@@ -126,4 +144,68 @@
             </div>
         @endif
     </div>
+
+    @push('scripts')
+    <script>
+        const colocatairesData = {};
+
+        function initColocataires(ctx) {
+            if (!colocatairesData[ctx]) colocatairesData[ctx] = [];
+        }
+
+        function addColocataire(ctx) {
+            initColocataires(ctx);
+            const input = document.getElementById('colocataire-nom-' + ctx);
+            const nom = input.value.trim();
+            if (!nom) return;
+            colocatairesData[ctx].push(nom);
+            input.value = '';
+            renderColocataires(ctx);
+            input.focus();
+        }
+
+        function removeColocataire(ctx, index) {
+            colocatairesData[ctx].splice(index, 1);
+            renderColocataires(ctx);
+            if (colocatairesData[ctx].length === 0) {
+                document.getElementById('colocataires-input-' + ctx).style.display = 'none';
+                document.getElementById('colocataires-toggle-' + ctx).style.display = '';
+            }
+        }
+
+        function renderColocataires(ctx) {
+            const badges = document.getElementById('colocataires-badges-' + ctx);
+            const hiddens = document.getElementById('colocataires-hiddens-' + ctx);
+            const hint = document.getElementById('colocataires-hint-' + ctx);
+            const list = colocatairesData[ctx] || [];
+
+            badges.style.display = list.length > 0 ? 'flex' : 'none';
+            hint.style.display = list.length > 0 ? '' : 'none';
+
+            badges.innerHTML = list.map((nom, i) =>
+                '<span class="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-full text-sm">' +
+                    nom +
+                    '<button type="button" onclick="removeColocataire(\'' + ctx + '\',' + i + ')" class="ml-1 w-4 h-4 rounded-full bg-primary-200 hover:bg-primary-300 inline-flex items-center justify-center">' +
+                        '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' +
+                    '</button>' +
+                '</span>'
+            ).join('');
+
+            hiddens.innerHTML = list.map((nom, i) =>
+                '<input type="hidden" name="autres_locataires[' + i + ']" value="' + nom.replace(/"/g, '&quot;') + '">'
+            ).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            ['create', 'edit'].forEach(function(ctx) {
+                const input = document.getElementById('colocataire-nom-' + ctx);
+                if (input) {
+                    input.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') { e.preventDefault(); addColocataire(ctx); }
+                    });
+                }
+            });
+        });
+    </script>
+    @endpush
 @endsection

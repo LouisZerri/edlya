@@ -11,6 +11,8 @@ class Logement extends Model
 {
     use HasFactory;
 
+    protected $table = 'logement';
+
     protected $fillable = [
         'user_id',
         'nom',

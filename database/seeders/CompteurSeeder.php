@@ -10,7 +10,7 @@ class CompteurSeeder extends Seeder
 {
     public function run(): void
     {
-        $etatsDesLieux = EtatDesLieux::all();
+        $etatsDesLieux = EtatDesLieux::doesntHave('compteurs')->get();
 
         foreach ($etatsDesLieux as $edl) {
             // 70% de chance d'avoir des compteurs
@@ -22,7 +22,7 @@ class CompteurSeeder extends Seeder
                         'etat_des_lieux_id' => $edl->id,
                         'type' => 'electricite',
                         'numero' => fake()->numerify('##########'),
-                        'index' => fake()->numberBetween(10000, 99999),
+                        'index_value' => fake()->numberBetween(10000, 99999),
                         'commentaire' => fake()->boolean(20) ? 'Compteur dans le couloir' : null,
                     ]);
                 }
@@ -33,7 +33,7 @@ class CompteurSeeder extends Seeder
                         'etat_des_lieux_id' => $edl->id,
                         'type' => 'eau_froide',
                         'numero' => fake()->numerify('EF-########'),
-                        'index' => fake()->numberBetween(100, 9999),
+                        'index_value' => fake()->numberBetween(100, 9999),
                         'commentaire' => null,
                     ]);
                 }
@@ -44,7 +44,7 @@ class CompteurSeeder extends Seeder
                         'etat_des_lieux_id' => $edl->id,
                         'type' => 'eau_chaude',
                         'numero' => fake()->numerify('EC-########'),
-                        'index' => fake()->numberBetween(50, 5000),
+                        'index_value' => fake()->numberBetween(50, 5000),
                         'commentaire' => null,
                     ]);
                 }
@@ -55,7 +55,7 @@ class CompteurSeeder extends Seeder
                         'etat_des_lieux_id' => $edl->id,
                         'type' => 'gaz',
                         'numero' => fake()->numerify('GZ##########'),
-                        'index' => fake()->numberBetween(1000, 50000),
+                        'index_value' => fake()->numberBetween(1000, 50000),
                         'commentaire' => fake()->boolean(10) ? 'Compteur extérieur' : null,
                     ]);
                 }

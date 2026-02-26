@@ -123,6 +123,16 @@
                         <dd class="text-slate-800">{{ $etatDesLieux->locataire_telephone }}</dd>
                     </div>
                 @endif
+                @if (!empty($etatDesLieux->autres_locataires))
+                    <div>
+                        <dt class="text-slate-500">Occupants</dt>
+                        <dd class="flex flex-wrap gap-1.5 mt-1">
+                            @foreach ($etatDesLieux->autres_locataires as $coloc)
+                                <span class="inline-block px-2.5 py-1 bg-primary-50 text-primary-700 rounded-full text-xs">{{ $coloc }}</span>
+                            @endforeach
+                        </dd>
+                    </div>
+                @endif
             </dl>
         </div>
 
@@ -181,8 +191,8 @@
                         @if ($compteur->numero)
                             <p class="text-xs text-slate-500">N° {{ $compteur->numero }}</p>
                         @endif
-                        @if ($compteur->index)
-                            <p class="text-lg font-bold text-slate-800 mt-1">{{ $compteur->index }}</p>
+                        @if ($compteur->index_value)
+                            <p class="text-lg font-bold text-slate-800 mt-1">{{ $compteur->index_value }}</p>
                         @else
                             <p class="text-sm text-slate-400 italic mt-1">Non relevé</p>
                         @endif

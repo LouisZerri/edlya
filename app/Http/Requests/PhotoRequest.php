@@ -19,7 +19,7 @@ class PhotoRequest extends FormRequest
             'legende' => ['nullable', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
-            'element_id' => ['sometimes', 'exists:elements,id'],
+            'element_id' => ['sometimes', 'exists:element,id'],
         ];
     }
 

@@ -102,6 +102,25 @@
                         <x-form.input name="locataire_telephone" type="tel" label="Téléphone" :value="$etatDesLieux->locataire_telephone" />
                     </div>
 
+                    {{-- Autres locataires (colocation) --}}
+                    <div class="mt-4 mb-4" id="colocataires-edit">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Occupants</label>
+                        <div id="colocataires-badges-edit" class="flex flex-wrap gap-2 mb-2" style="display:none;"></div>
+                        <div id="colocataires-hiddens-edit"></div>
+                        <div id="colocataires-input-edit" class="flex gap-2" style="display:none;">
+                            <input type="text" id="colocataire-nom-edit" placeholder="Nom de l'occupant"
+                                class="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none">
+                            <button type="button" onclick="addColocataire('edit')" class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700">
+                                Ajouter
+                            </button>
+                        </div>
+                        <button type="button" id="colocataires-toggle-edit" onclick="document.getElementById('colocataires-input-edit').style.display='flex';this.style.display='none';" class="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 font-medium py-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                            Ajouter un occupant
+                        </button>
+                        <p id="colocataires-hint-edit" class="text-xs text-slate-400 mt-1" style="display:none;">Le locataire principal signe pour tous</p>
+                    </div>
+
                     <div class="mt-4 mb-4">
                         <label for="observations_generales"
                             class="block text-sm font-medium text-slate-700 mb-1">Observations</label>
@@ -207,7 +226,7 @@
                                                         texte="Notez tous les chiffres affichés sur le compteur. Pour l'électricité, notez HP et HC séparément si applicable."
                                                         position="bottom" />
                                                 </label>
-                                                <input type="text" name="index" value="{{ $compteur?->index }}"
+                                                <input type="text" name="index_value" value="{{ $compteur?->index_value }}"
                                                     placeholder="Ex: 45678"
                                                     class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none bg-white">
                                             </div>
@@ -1027,4 +1046,77 @@
     </div>
 
     <x-analyse-modal />
+
+    @push('scripts')
+    <script>
+        const colocatairesData = window.colocatairesData || {};
+
+        function initColocataires(ctx) {
+            if (!colocatairesData[ctx]) colocatairesData[ctx] = [];
+        }
+
+        function addColocataire(ctx) {
+            initColocataires(ctx);
+            const input = document.getElementById('colocataire-nom-' + ctx);
+            const nom = input.value.trim();
+            if (!nom) return;
+            colocatairesData[ctx].push(nom);
+            input.value = '';
+            renderColocataires(ctx);
+            input.focus();
+        }
+
+        function removeColocataire(ctx, index) {
+            colocatairesData[ctx].splice(index, 1);
+            renderColocataires(ctx);
+            if (colocatairesData[ctx].length === 0) {
+                document.getElementById('colocataires-input-' + ctx).style.display = 'none';
+                document.getElementById('colocataires-toggle-' + ctx).style.display = '';
+            }
+        }
+
+        function renderColocataires(ctx) {
+            const badges = document.getElementById('colocataires-badges-' + ctx);
+            const hiddens = document.getElementById('colocataires-hiddens-' + ctx);
+            const hint = document.getElementById('colocataires-hint-' + ctx);
+            const list = colocatairesData[ctx] || [];
+
+            badges.style.display = list.length > 0 ? 'flex' : 'none';
+            hint.style.display = list.length > 0 ? '' : 'none';
+
+            badges.innerHTML = list.map((nom, i) =>
+                '<span class="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-full text-sm">' +
+                    nom +
+                    '<button type="button" onclick="removeColocataire(\'' + ctx + '\',' + i + ')" class="ml-1 w-4 h-4 rounded-full bg-primary-200 hover:bg-primary-300 inline-flex items-center justify-center">' +
+                        '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' +
+                    '</button>' +
+                '</span>'
+            ).join('');
+
+            hiddens.innerHTML = list.map((nom, i) =>
+                '<input type="hidden" name="autres_locataires[' + i + ']" value="' + nom.replace(/"/g, '&quot;') + '">'
+            ).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Charger les colocataires existants
+            const existing = @json($etatDesLieux->autres_locataires ?? []);
+            if (existing && existing.length > 0) {
+                colocatairesData['edit'] = existing;
+                renderColocataires('edit');
+                document.getElementById('colocataires-input-edit').style.display = 'flex';
+                document.getElementById('colocataires-toggle-edit').style.display = 'none';
+            }
+
+            ['create', 'edit'].forEach(function(ctx) {
+                const input = document.getElementById('colocataire-nom-' + ctx);
+                if (input) {
+                    input.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') { e.preventDefault(); addColocataire(ctx); }
+                    });
+                }
+            });
+        });
+    </script>
+    @endpush
 @endsection

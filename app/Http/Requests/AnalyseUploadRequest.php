@@ -16,7 +16,7 @@ class AnalyseUploadRequest extends FormRequest
     {
         return [
             'photo' => ['required', 'image', 'max:10240'],
-            'piece_id' => ['required', 'exists:pieces,id'],
+            'piece_id' => ['required', 'exists:piece,id'],
         ];
     }
 

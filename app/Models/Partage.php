@@ -8,6 +8,8 @@ use Illuminate\Support\Str;
 
 class Partage extends Model
 {
+    protected $table = 'partage';
+
     protected $fillable = [
         'etat_des_lieux_id',
         'token',

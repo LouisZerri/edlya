@@ -15,8 +15,8 @@ class AnalyseDegradationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'element_id' => ['required', 'exists:elements,id'],
-            'photo_id' => ['required', 'exists:photos,id'],
+            'element_id' => ['required', 'exists:element,id'],
+            'photo_id' => ['required', 'exists:photo,id'],
             'etat_entree' => ['required', 'string'],
             'observations' => ['nullable', 'string'],
         ];

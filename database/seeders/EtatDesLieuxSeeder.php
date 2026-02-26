@@ -14,6 +14,10 @@ class EtatDesLieuxSeeder extends Seeder
     {
         $logement = Logement::first();
 
+        if (!$logement || EtatDesLieux::where('logement_id', $logement->id)->exists()) {
+            return;
+        }
+
         // =====================================================
         // EDL D'ENTRÉE - Signé (état initial du logement)
         // =====================================================

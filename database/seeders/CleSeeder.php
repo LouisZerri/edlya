@@ -10,7 +10,7 @@ class CleSeeder extends Seeder
 {
     public function run(): void
     {
-        $etatsDesLieux = EtatDesLieux::all();
+        $etatsDesLieux = EtatDesLieux::doesntHave('cles')->get();
 
         $typesCommuns = [
             ['type' => 'Porte d\'entrée', 'min' => 2, 'max' => 3],

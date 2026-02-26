@@ -15,7 +15,7 @@ class AppliquerElementsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'piece_id' => ['required', 'exists:pieces,id'],
+            'piece_id' => ['required', 'exists:piece,id'],
             'elements' => ['required', 'array'],
             'elements.*.type' => ['required', 'string'],
             'elements.*.nom' => ['required', 'string'],

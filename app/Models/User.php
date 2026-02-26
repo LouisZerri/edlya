@@ -10,6 +10,8 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
+    protected $table = 'user';
+
     protected $fillable = [
         'name',
         'email',
@@ -17,6 +19,7 @@ class User extends Authenticatable
         'role',
         'telephone',
         'entreprise',
+        'roles',
     ];
 
     protected $hidden = [
@@ -28,6 +31,7 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'roles' => 'array',
         ];
     }
 

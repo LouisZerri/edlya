@@ -123,11 +123,11 @@
                                 <div class="grid grid-cols-2 gap-3 text-sm">
                                     <div class="bg-blue-50 rounded p-2 text-center">
                                         <p class="text-xs text-blue-600 mb-1">Entrée</p>
-                                        <p class="font-semibold">{{ $compteurEntree?->index ?? '-' }}</p>
+                                        <p class="font-semibold">{{ $compteurEntree?->index_value ?? '-' }}</p>
                                     </div>
                                     <div class="bg-orange-50 rounded p-2 text-center">
                                         <p class="text-xs text-orange-600 mb-1">Sortie</p>
-                                        <p class="font-semibold">{{ $compteurSortie?->index ?? '-' }}</p>
+                                        <p class="font-semibold">{{ $compteurSortie?->index_value ?? '-' }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -160,8 +160,8 @@
                                     <tr class="border-b border-slate-100">
                                         <td class="py-3 px-4 font-medium">{{ $label }}</td>
                                         <td class="py-3 px-4 text-slate-500 text-xs">{{ $compteurEntree?->numero ?? ($compteurSortie?->numero ?? '-') }}</td>
-                                        <td class="py-3 px-4 text-center bg-blue-50 font-semibold">{{ $compteurEntree?->index ?? '-' }}</td>
-                                        <td class="py-3 px-4 text-center bg-orange-50 font-semibold">{{ $compteurSortie?->index ?? '-' }}</td>
+                                        <td class="py-3 px-4 text-center bg-blue-50 font-semibold">{{ $compteurEntree?->index_value ?? '-' }}</td>
+                                        <td class="py-3 px-4 text-center bg-orange-50 font-semibold">{{ $compteurSortie?->index_value ?? '-' }}</td>
                                         <td class="py-3 px-4 text-center">
                                             @if ($consommation !== null)
                                                 <span class="font-bold {{ $consommation >= 0 ? 'text-slate-800' : 'text-red-600' }}">

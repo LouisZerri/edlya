@@ -16,7 +16,7 @@ class AnalysePhotoRequest extends FormRequest
     {
         return [
             'photo_path' => ['required', 'string'],
-            'piece_id' => ['required', 'exists:pieces,id'],
+            'piece_id' => ['required', 'exists:piece,id'],
         ];
     }
 

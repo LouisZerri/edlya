@@ -16,7 +16,7 @@ class CompteurRequest extends FormRequest
     {
         $rules = [
             'numero' => ['nullable', 'string', 'max:255'],
-            'index' => ['nullable', 'string', 'max:255'],
+            'index_value' => ['nullable', 'string', 'max:255'],
             'commentaire' => ['nullable', 'string', 'max:1000'],
             'photo' => ['nullable', 'image', 'max:10240'],
         ];

@@ -11,12 +11,17 @@ class Photo extends Model
 {
     use HasFactory;
 
+    protected $table = 'photo';
+
+    const UPDATED_AT = null;
+
     protected $fillable = [
         'element_id',
         'chemin',
         'legende',
         'latitude',
         'longitude',
+        'ordre',
     ];
 
     public function element(): BelongsTo

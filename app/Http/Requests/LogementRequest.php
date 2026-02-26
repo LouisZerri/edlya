@@ -19,7 +19,7 @@ class LogementRequest extends FormRequest
             'adresse' => ['required', 'string', 'min:5', 'max:255'],
             'code_postal' => ['required', 'string', 'regex:/^[0-9]{5}$/'],
             'ville' => ['required', 'string', 'min:2', 'max:255', 'regex:/^[a-zA-ZÀ-ÿ\s\-]+$/'],
-            'type' => ['required', 'in:appartement,maison,studio,local_commercial'],
+            'type' => ['nullable', 'in:appartement,maison,studio,local_commercial'],
             'surface' => ['nullable', 'numeric', 'min:5', 'max:10000'],
             'nb_pieces' => ['nullable', 'integer', 'min:1', 'max:50'],
             'description' => ['nullable', 'string', 'max:1000'],

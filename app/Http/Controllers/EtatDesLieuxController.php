@@ -45,13 +45,15 @@ class EtatDesLieuxController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'logement_id' => ['required', 'exists:logements,id'],
+            'logement_id' => ['required', 'exists:logement,id'],
             'type' => ['required', 'in:entree,sortie'],
             'date_realisation' => ['required', 'date'],
             'locataire_nom' => ['required', 'string', 'max:255'],
             'locataire_email' => ['nullable', 'email', 'max:255'],
             'locataire_telephone' => ['nullable', 'string', 'max:20'],
             'observations_generales' => ['nullable', 'string'],
+            'autres_locataires' => ['nullable', 'array'],
+            'autres_locataires.*' => ['string', 'max:255'],
             'typologie' => ['nullable', 'string'],
         ]);
 
@@ -69,6 +71,7 @@ class EtatDesLieuxController extends Controller
             'locataire_email' => $validated['locataire_email'] ?? null,
             'locataire_telephone' => $validated['locataire_telephone'] ?? null,
             'observations_generales' => $validated['observations_generales'] ?? null,
+            'autres_locataires' => !empty($validated['autres_locataires']) ? array_values($validated['autres_locataires']) : null,
             'statut' => 'brouillon',
         ]);
 
@@ -127,15 +130,19 @@ class EtatDesLieuxController extends Controller
         $this->authorize('update', $etatDesLieux);
 
         $validated = $request->validate([
-            'logement_id' => ['required', 'exists:logements,id'],
+            'logement_id' => ['required', 'exists:logement,id'],
             'type' => ['required', 'in:entree,sortie'],
             'date_realisation' => ['required', 'date'],
             'locataire_nom' => ['required', 'string', 'max:255'],
             'locataire_email' => ['nullable', 'email', 'max:255'],
             'locataire_telephone' => ['nullable', 'string', 'max:20'],
             'observations_generales' => ['nullable', 'string'],
+            'autres_locataires' => ['nullable', 'array'],
+            'autres_locataires.*' => ['string', 'max:255'],
             'statut' => ['nullable', 'in:brouillon,en_cours,termine'],
         ]);
+
+        $validated['autres_locataires'] = !empty($validated['autres_locataires']) ? array_values($validated['autres_locataires']) : null;
 
         $etatDesLieux->update($validated);
 

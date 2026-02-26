@@ -23,6 +23,7 @@ class PhotoController extends Controller
             'legende' => $request->legende,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
+            'ordre' => $element->photos()->max('ordre') + 1,
         ]);
 
         // Ajouter automatiquement la référence photo dans les observations
@@ -39,7 +40,7 @@ class PhotoController extends Controller
         $this->authorize('update', $piece);
 
         $request->validate([
-            'element_id' => ['required', 'exists:elements,id'],
+            'element_id' => ['required', 'exists:element,id'],
             'photo' => ['required', 'image', 'max:10240'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
@@ -63,6 +64,7 @@ class PhotoController extends Controller
             'chemin' => $path,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
+            'ordre' => Photo::where('element_id', $element->id)->max('ordre') + 1,
         ]);
 
         // Ajouter automatiquement la référence photo dans les observations

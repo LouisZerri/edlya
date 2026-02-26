@@ -11,6 +11,8 @@ class Cle extends Model
 {
     use HasFactory;
 
+    protected $table = 'cle';
+
     protected $fillable = [
         'etat_des_lieux_id',
         'type',

@@ -282,7 +282,10 @@ class CoutReparationSeeder extends Seeder
         ];
 
         foreach ($couts as $cout) {
-            CoutReparation::create($cout);
+            CoutReparation::firstOrCreate(
+                ['type_element' => $cout['type_element'], 'nom' => $cout['nom']],
+                $cout
+            );
         }
     }
 }

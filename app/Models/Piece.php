@@ -11,12 +11,22 @@ class Piece extends Model
 {
     use HasFactory;
 
+    protected $table = 'piece';
+
     protected $fillable = [
         'etat_des_lieux_id',
         'nom',
         'ordre',
         'observations',
+        'photos',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'photos' => 'array',
+        ];
+    }
 
     public function etatDesLieux(): BelongsTo
     {

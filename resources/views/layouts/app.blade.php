@@ -136,6 +136,8 @@
     {{-- FAQ Modal --}}
     <x-faq-modal />
 
+    @stack('scripts')
+
 </body>
 
 </html>

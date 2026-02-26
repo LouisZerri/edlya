@@ -520,6 +520,12 @@
                     {{ $etatDesLieux->locataire_telephone }}
                 </div>
             @endif
+            @if(!empty($etatDesLieux->autres_locataires))
+                <div class="info-row">
+                    <span class="info-label">Occupants :</span>
+                    {{ implode(', ', $etatDesLieux->autres_locataires) }}
+                </div>
+            @endif
         </div>
 
         {{-- RELEVÉ DES COMPTEURS --}}
@@ -558,8 +564,8 @@
                             <tbody>
                                 <tr>
                                     <td class="center">{{ $compteur->numero ?? '-' }}</td>
-                                    <td class="center">{{ $compteurEntree?->index ?? '-' }}</td>
-                                    <td class="center">{{ $compteur->index ?? 'non relevé' }}</td>
+                                    <td class="center">{{ $compteurEntree?->index_value ?? '-' }}</td>
+                                    <td class="center">{{ $compteur->index_value ?? 'non relevé' }}</td>
                                     <td>
                                         {{ $compteur->commentaire ?? '' }}
                                         @if($compteur->photos)

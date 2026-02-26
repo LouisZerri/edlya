@@ -16,7 +16,7 @@ class ImportStoreRequest extends FormRequest
     {
         return [
             'data' => ['required', 'array'],
-            'logement_id' => ['nullable', 'exists:logements,id'],
+            'logement_id' => ['nullable', 'exists:logement,id'],
         ];
     }
 

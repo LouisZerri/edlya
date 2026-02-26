@@ -11,11 +11,13 @@ class Compteur extends Model
 {
     use HasFactory;
 
+    protected $table = 'compteur';
+
     protected $fillable = [
         'etat_des_lieux_id',
         'type',
         'numero',
-        'index',
+        'index_value',
         'photos',
         'commentaire',
     ];
@@ -63,11 +65,11 @@ class Compteur extends Model
      */
     public function getIndexNumeriqueAttribute(): ?float
     {
-        if (empty($this->index)) {
+        if (empty($this->index_value)) {
             return null;
         }
 
-        preg_match_all('/(\d+[\s.]?\d*)\s*(?:kWh|m³|m3)?/i', $this->index, $matches);
+        preg_match_all('/(\d+[\s.]?\d*)\s*(?:kWh|m³|m3)?/i', $this->index_value, $matches);
 
         if (empty($matches[1])) {
             return null;
