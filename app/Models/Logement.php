@@ -23,7 +23,6 @@ class Logement extends Model
         'surface',
         'nb_pieces',
         'description',
-        'photo_principale',
     ];
 
     public function user(): BelongsTo

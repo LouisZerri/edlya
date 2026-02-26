@@ -13,8 +13,6 @@ class Photo extends Model
 
     protected $table = 'photo';
 
-    const UPDATED_AT = null;
-
     protected $fillable = [
         'element_id',
         'chemin',
