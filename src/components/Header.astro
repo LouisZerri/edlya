@@ -1,0 +1,107 @@
+---
+interface Props {
+  dark?: boolean;
+  solid?: boolean;
+}
+
+const { dark = true, solid = false } = Astro.props;
+
+const navLinks = [
+  { label: "Fonctionnalites", href: "/#fonctionnalites" },
+  { label: "Comment ca marche", href: "/#comment-ca-marche" },
+  { label: "Tarifs", href: "/#tarifs" },
+  { label: "Contact", href: "/#contact" },
+];
+---
+
+<header id="header" class:list={["fixed top-0 left-0 right-0 z-50 transition-all duration-300", { "header-light": !dark }, solid ? "bg-primary-900 shadow-lg" : ""]}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16 sm:h-20">
+      <!-- Logo -->
+      <a href="/" class="flex items-center gap-2 group">
+        <img src="/favicon.svg" alt="Edlya" class:list={["h-8 w-8 sm:h-9 sm:w-9", { "brightness-0 invert": dark }]} />
+        <span class:list={["text-xl sm:text-2xl font-bold transition-colors", dark ? "text-white group-hover:text-primary-200" : "text-slate-900 group-hover:text-primary-600"]}>Edlya</span>
+      </a>
+
+      <!-- Nav desktop -->
+      <nav class="hidden md:flex items-center gap-8">
+        {navLinks.map(link => (
+          <a href={link.href} class:list={["text-sm font-medium transition-colors", dark ? "text-white/80 hover:text-white" : "text-slate-600 hover:text-slate-900"]}>
+            {link.label}
+          </a>
+        ))}
+        <a href="/#tarifs" class:list={["px-5 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer", dark ? "bg-white text-primary-600 hover:bg-primary-50" : "bg-primary-600 text-white hover:bg-primary-700"]}>
+          Commencer
+        </a>
+      </nav>
+
+      <!-- Menu burger mobile -->
+      <button id="menu-toggle" class:list={["md:hidden p-2", dark ? "text-white" : "text-slate-900"]} aria-label="Menu">
+        <svg id="menu-open-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        <svg id="menu-close-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Menu mobile -->
+  <div id="mobile-menu" class:list={["md:hidden hidden backdrop-blur-sm border-t", dark ? "bg-primary-900/95 border-white/10" : "bg-white/95 border-slate-200"]}>
+    <div class="px-4 py-4 space-y-2">
+      {navLinks.map(link => (
+        <a href={link.href} class:list={["block py-2 text-sm font-medium transition-colors mobile-link", dark ? "text-white/80 hover:text-white" : "text-slate-600 hover:text-slate-900"]}>
+          {link.label}
+        </a>
+      ))}
+      <a href="/#tarifs" class:list={["block px-5 py-2.5 rounded-lg text-sm font-semibold text-center mt-3 transition-colors mobile-link cursor-pointer", dark ? "bg-white text-primary-600 hover:bg-primary-50" : "bg-primary-600 text-white hover:bg-primary-700"]}>
+        Commencer
+      </a>
+    </div>
+  </div>
+</header>
+
+<script>
+  const header = document.getElementById('header')!;
+  const isLight = header.classList.contains('header-light');
+  const toggle = document.getElementById('menu-toggle')!;
+  const menu = document.getElementById('mobile-menu')!;
+  const openIcon = document.getElementById('menu-open-icon')!;
+  const closeIcon = document.getElementById('menu-close-icon')!;
+  const mobileLinks = document.querySelectorAll('.mobile-link');
+
+  // Scroll effect
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 50) {
+      if (isLight) {
+        header.classList.add('bg-slate-50', 'backdrop-blur-sm', 'shadow-lg');
+      } else {
+        header.classList.add('bg-primary-900/95', 'backdrop-blur-sm', 'shadow-lg');
+      }
+    } else {
+      header.classList.remove('bg-primary-900/95', 'bg-slate-50', 'backdrop-blur-sm', 'shadow-lg');
+    }
+  });
+
+  // Initial state for light mode
+  if (isLight) {
+    header.classList.add('bg-slate-50', 'backdrop-blur-sm', 'shadow-sm', 'border-b', 'border-slate-200');
+  }
+
+  // Mobile menu toggle
+  toggle.addEventListener('click', () => {
+    menu.classList.toggle('hidden');
+    openIcon.classList.toggle('hidden');
+    closeIcon.classList.toggle('hidden');
+  });
+
+  // Close on link click
+  mobileLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      menu.classList.add('hidden');
+      openIcon.classList.remove('hidden');
+      closeIcon.classList.add('hidden');
+    });
+  });
+</script>
