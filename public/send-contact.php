@@ -28,7 +28,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 $smtpHost = 'smtp.ionos.fr';
 $smtpPort = 465;
 $smtpUser = 'contact@edlya.fr';
-$smtpPass = 'ByroN.GESTIMMO2005';
+$smtpPass = 'XXXX'; // A remplacer sur le serveur
 $fromEmail = 'contact@edlya.fr';
 $fromName = 'Edlya';
 $toEmail = 'contact@edlya.fr';
