@@ -333,6 +333,8 @@ import Footer from '../components/Footer.astro';
               class="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 transition-all shadow-lg shadow-primary-600/30 hover:shadow-xl hover:-translate-y-0.5 cursor-pointer">
               Envoyer le message
             </button>
+            <p id="form-success" class="hidden text-green-600 text-sm font-medium text-center mt-3">Message envoye avec succes !</p>
+            <p id="form-error" class="hidden text-red-500 text-sm font-medium text-center mt-3">Une erreur est survenue. Veuillez reessayer.</p>
           </form>
         </div>
       </div>
@@ -373,4 +375,39 @@ import Footer from '../components/Footer.astro';
   </section>
 
   <Footer />
+
+  <script>
+    const form = document.getElementById('contact-form') as HTMLFormElement;
+    const success = document.getElementById('form-success')!;
+    const error = document.getElementById('form-error')!;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      success.classList.add('hidden');
+      error.classList.add('hidden');
+
+      const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      btn.disabled = true;
+      btn.textContent = 'Envoi en cours...';
+
+      try {
+        const res = await fetch('/send-contact.php', {
+          method: 'POST',
+          body: new FormData(form),
+        });
+
+        if (res.ok) {
+          success.classList.remove('hidden');
+          form.reset();
+        } else {
+          error.classList.remove('hidden');
+        }
+      } catch {
+        error.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Envoyer le message';
+      }
+    });
+  </script>
 </Layout>
